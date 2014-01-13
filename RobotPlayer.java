@@ -34,7 +34,6 @@ public class RobotPlayer {
             Direction.NORTH_WEST};
         Direction toEnemy = rc.getLocation().directionTo(rc.senseEnemyHQLocation());
 
-
         while(true) {
             switch(rc.getType()){
                 case HQ:
@@ -89,6 +88,7 @@ public class RobotPlayer {
                 case NOISETOWER:case PASTR:
                     break;
             }
+            System.out.println(Clock.getBytecodeNum());
             rc.yield();
         }
     }

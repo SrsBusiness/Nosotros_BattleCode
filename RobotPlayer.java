@@ -9,7 +9,22 @@ import java.util.*;
 
 public class RobotPlayer {
     static Random rand;
-
+/*
+    private static Direction chooseDir(Robot[] robots, RobotController rc) throws Exception{
+        if (rand.nextInt(4) < 2) {
+            return directions[rand.nextInt(8)];
+        }
+        Robot weakest = null;
+        for(Robot r : robots){
+            double i;
+            if((i = rc.senseRobotInfo(r).health) < lowest){
+                lowest = i; 
+                weakest = r;
+            }
+        }
+        return weakest;
+    }
+*/ 
     private static Robot getLowest(Robot[] robots, RobotController rc) throws Exception{
         double lowest = (double)Integer.MAX_VALUE;
         Robot weakest = null;
@@ -32,7 +47,8 @@ public class RobotPlayer {
             Direction.SOUTH_WEST, 
             Direction.WEST, 
             Direction.NORTH_WEST};
-        Direction toEnemy = rc.getLocation().directionTo(rc.senseEnemyHQLocation());
+        MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
+        Direction toEnemy = rc.getLocation().directionTo(enemyHQLocation);
 
         while(true) {
             switch(rc.getType()){

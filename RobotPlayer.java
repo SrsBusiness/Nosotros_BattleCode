@@ -63,8 +63,9 @@ public class RobotPlayer {
                             //Construct a PASTR
                              
                             Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                            if (nearbyEnemies.length > 0) {
-                                    rc.attackSquare(rc.senseRobotInfo(getLowest(nearbyEnemies, rc)).location);
+                            Robot target;
+                            if (nearbyEnemies.length > 0 && (target = getLowest(nearbyEnemies, rc)) != null) {
+                                rc.attackSquare(rc.senseRobotInfo(target).location);
                                 //Move in a random direction
                             } else if (action < 1 && rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) > 2) {
                                 rc.construct(RobotType.PASTR);

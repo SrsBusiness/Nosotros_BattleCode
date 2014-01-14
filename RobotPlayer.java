@@ -30,7 +30,10 @@ public class RobotPlayer {
         Robot weakest = null;
         for(Robot r : robots){
             double i;
-            if((i = rc.senseRobotInfo(r).health) < lowest){
+            RobotInfo rInfo = rc.senseRobotInfo(r);
+            if(weakest != null && rc.senseRobotInfo(weakest).type.equals(RobotType.SOLDIER) && !rInfo.type.equals(RobotType.SOLDIER) ){
+            }
+            if((i = rInfo.health) < lowest){
                 lowest = i; 
                 weakest = r;
             }
@@ -74,17 +77,14 @@ public class RobotPlayer {
                         if (rc.isActive()) {
                             int action = (rc.getRobot().getID()*rand.nextInt(101) + 50)%101;
                             //Construct a PASTR
-                            /*
-                            if (action < 1 && rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) > 2) {
+                             
+                            Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
+                            if (nearbyEnemies.length > 0) {
+                                    rc.attackSquare(rc.senseRobotInfo(getLowest(nearbyEnemies, rc)).location);
+                                //Move in a random direction
+                            } else if (action < 1 && rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) > 2) {
                                 rc.construct(RobotType.PASTR);
                                 //Attack a random nearby enemy
-                            }*/ 
-                            if (action < 30) {
-                                Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                                if (nearbyEnemies.length > 0) {
-                                    rc.attackSquare(rc.senseRobotInfo(getLowest(nearbyEnemies, rc)).location);
-                                }
-                                //Move in a random direction
                             } else if (action < 80) {
                                 Direction moveDirection = directions[rand.nextInt(8)];
                                 if (rc.canMove(moveDirection)) {

@@ -14,8 +14,7 @@ public class RobotPlayer {
     
     private static Vector getForceVector(MapLocation src, MapLocation dst, double c1, double c2) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
-        Vector offset = new Vector(0.0, 0.0);
-        offset.addVector(force.getUnitVector());
+        Vector offset = force.getUnitVector();
         force.scale(c1);
         offset.scale(c2);
         force.addVector(offset);
@@ -83,10 +82,10 @@ public class RobotPlayer {
                     switch (info.type) {
                         case SOLDIER: 
                             count++;
-                            alliedForceVector.addVector(getForceVector(myLocation, info.location, 1, 0));
+                            enemyForceVector.addVector(getForceVector(myLocation, info.location, 1, 0));
                             break;
                         case PASTR: 
-                            alliedForceVector.addVector(getForceVector(myLocation, info.location, 6, 0));
+                            enemyForceVector.addVector(getForceVector(myLocation, info.location, 6, 0));
                             break;
                     }
                 }

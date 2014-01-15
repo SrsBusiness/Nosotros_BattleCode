@@ -8,6 +8,18 @@ public class Vector {
     private double y;
     private double magnitudeSq;
 
+    public Vector() {
+        x = 0;
+        y = 0;
+        magnitudeSq = 0;
+    }
+
+    public Vector(double xGiven, double yGiven) {
+        x = xGiven;
+        y = yGiven;
+        magnitudeSq = Math.pow(x, 2) + Math.pow(y, 2);
+    }
+
     public double getX() {
         return x;
     }
@@ -20,15 +32,15 @@ public class Vector {
         return magnitudeSq;
     }
 
-    public Vector() {
-        x = 0;
-        y = 0;
-        magnitudeSq = 0;
+    public Vector getUnitVector() {
+        double magnitude = Math.pow(magnitudeSq, 0.5);
+        Vector v = new Vector(x/magnitude, y/magnitude);
+        return v;
     }
 
-    public Vector(double xGiven, double yGiven) {
-        x = xGiven;
-        y = yGiven;
+    public void setXY(double x1, double y1) {
+        x = x1;
+        y = y1;
         magnitudeSq = Math.pow(x, 2) + Math.pow(y, 2);
     }
 
@@ -44,29 +56,23 @@ public class Vector {
         magnitudeSq = Math.pow(x, 2) + Math.pow(y, 2);
     }
 
-    public void setXY(double x1, double y1) {
-        x = x1;
-        y = y1;
+    public void scale(double s) {
+        x *= s;
+        y *= s;
         magnitudeSq = Math.pow(x, 2) + Math.pow(y, 2);
-    }
-
-    public Vector getUnitVector() {
-        double magnitude = Math.pow(magnitudeSq, 0.5);
-        Vector v = new Vector(x/magnitude, y/magnitude);
-        return v;
     }
 
     public Direction toDirectionEnum() {
         Direction[] directions = {
-            Direction.WEST, 
-            Direction.NORTH_WEST,
-            Direction.NORTH, 
-            Direction.NORTH_EAST, 
             Direction.EAST, 
-            Direction.SOUTH_EAST, 
+            Direction.SOUTH_EAST,
             Direction.SOUTH, 
             Direction.SOUTH_WEST,
+            Direction.WEST,
+            Direction.NORTH_WEST, 
+            Direction.NORTH,
+            Direction.NORTH_EAST
         };
-        return directions[(int)(4*Math.atan2(y, x)/Math.PI)];
+        return directions[((int)(Math.round(4*Math.atan2(y, x)/Math.PI))+8)%8];
     }
 }

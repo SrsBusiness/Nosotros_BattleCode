@@ -14,8 +14,11 @@ public class RobotPlayer {
     
     private static Vector getForceVector(MapLocation src, MapLocation dst, double c1, double c2) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
-        force = force.getUnitVector();
-        force.setXY(c1*force.getX()+c2, c1*force.getY()+c2);
+        Vector offset = new Vector(0.0, 0.0);
+        offset.addVector(force.getUnitVector());
+        force.scale(c1);
+        offset.scale(c2);
+        force.addVector(offset);
         return force;
     }
 
@@ -38,32 +41,63 @@ public class RobotPlayer {
         MapLocation myLocation = rc.getLocation();
         MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
         Direction enemyDir = myLocation.directionTo(enemyHQLocation);
-        Direction randChoice = directions[rand.nextInt(8)];
-        if (rand.nextInt(5) == 0) {
-            return randChoice;
-        }
+        //Direction randChoice = directions[rand.nextInt(8)];
+        //if (rand.nextInt(8) == 1) {
+        //    return randChoice;
+        //}
         int mode = 0; //Different modes have different parameters
         if (mode == 0) {
-            Robot[] allies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam());
-            Robot[] enemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
+            Robot[] allies = rc.senseNearbyGameObjects(Robot.class, 35, rc.getTeam());
+            Robot[] enemies = rc.senseNearbyGameObjects(Robot.class, 35, rc.getTeam().opponent());
             //TODO: add force caused by allied base.
-            Vector enemyHQVector = getForceVector(myLocation, enemyHQLocation, 3, -45);
+            Vector enemyHQVector = getForceVector(myLocation, enemyHQLocation, 3, -46);
             Vector alliedForceVector = new Vector(0.0, 0.0);
             Vector enemyForceVector = new Vector(0.0, 0.0);
             //TODO: add different weights to PASTRs and SOLDIERs
-            for (Robot r: allies) {
-                alliedForceVector.addVector(getForceVector(myLocation, rc.senseRobotInfo(r).location, 6, -9));
+            int count = 0;
+            if (allies.length > 1) {
+                for (Robot r: allies) {
+                    RobotInfo info = rc.senseRobotInfo(r);
+                    switch (info.type) {
+                        case SOLDIER: 
+                            count++;
+                            alliedForceVector.addVector(getForceVector(myLocation, info.location, 6, -15));
+                            break;
+                        case PASTR:
+                            //count++;
+                            //alliedForceVector.addVector(getForceVector(myLocation, info.location, 12, -18));
+                            break;
+                        case HQ: 
+                            count++;
+                            alliedForceVector.addVector(getForceVector(myLocation, info.location, -3, 0));
+                            break;
+                    }
+                }
+                alliedForceVector.scale(1.0/count);
             }
-            for (Robot r: enemies) {
-                //TODO: add different mode responses and aggression parameter.
-                alliedForceVector.addVector(getForceVector(myLocation, rc.senseRobotInfo(r).location, 1, -4));
+            if (enemies.length > 1) {
+                count = 0;
+                for (Robot r: enemies) {
+                    //TODO: add different mode responses and aggression parameter.
+                    RobotInfo info = rc.senseRobotInfo(r);
+                    switch (info.type) {
+                        case SOLDIER: 
+                            count++;
+                            alliedForceVector.addVector(getForceVector(myLocation, info.location, 1, 0));
+                            break;
+                        case PASTR: 
+                            alliedForceVector.addVector(getForceVector(myLocation, info.location, 6, 0));
+                            break;
+                    }
+                }
+                enemyForceVector.scale(1.0/count);
             }
             bestDir.addVector(enemyHQVector);
             bestDir.addVector(alliedForceVector);
             bestDir.addVector(enemyForceVector);
             return bestDir.toDirectionEnum();
         } else {
-            return Direction.NORTH;
+            return Direction.WEST;
         }
     }
     
@@ -122,11 +156,11 @@ public class RobotPlayer {
                             Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
                             if (nearbyEnemies.length > 0) {
                                 rc.attackSquare(rc.senseRobotInfo(getLowest(nearbyEnemies, rc)).location);
-                            } else if (action < 1 &&
-                                       rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) < 300 &&
+                            } else if (action < 10 &&
+                                       rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) < 16*16 &&
                                        rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam()).length == 0) {
                                 rc.construct(RobotType.PASTR);
-                            } else if (action < 80) {
+                            } else {// if (action < 80) {
                                 Direction moveDirection = chooseDir(rc);
                                 if (rc.canMove(moveDirection)) {
                                     rc.move(moveDirection);
@@ -138,12 +172,12 @@ public class RobotPlayer {
                                         rc.move(randChoice);
                                     }
                                 }
-                            } else {
+                            }/* else {
                                 //Sneak towards the enemy
-                                if (rc.canMove(toEnemy)) {
-                                    rc.sneak(toEnemy);
-                                }
-                            }
+                                //if (rc.canMove(toEnemy)) {
+                                //    rc.sneak(toEnemy);
+                                //}
+                            }*/
                         }
                     } catch (Exception e) {
                         System.err.println(e.toString() + "Soldier Exception");

@@ -1,11 +1,14 @@
 #!/bin/sh
+OUR_TEAM="Nosotros_BattleCode"
 
-if [[ -z "$BATTLECODE" ]]
-then
+if [[ -z "$BATTLECODE" ]]; then
   export BATTLECODE=$HOME/battlecode
 fi
 
-OUR_TEAM="Nosotros_BattleCode"
+if [ ! -e $BATTLECODE/MethodCosts.txt ]; then
+    echo "Error: not a BattleCode directory: $BATTLECODE"
+    exit
+fi
 
 cat > $BATTLECODE/bc.conf <<EOF
 # Match server settings
@@ -44,7 +47,8 @@ bc.server.transcribe-output=matches\\transcribed.txt
 EOF
 
 cd $BATTLECODE
-
+ant clean > /dev/null
+ant build > /dev/null
 find bin -type dir -depth 1 -print0 | while read -d $'\0' -r file ; do
     team=$(basename "$file")
     printf 'Playing team: %s\n' "$team"

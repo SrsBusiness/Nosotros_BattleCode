@@ -1,8 +1,12 @@
 #!/bin/sh
 
-if [[ -z "$BATTLECODE" ]]
-then
+if [[ -z "$BATTLECODE" ]]; then
   export BATTLECODE=$HOME/battlecode
+fi
+
+if [ ! -e $BATTLECODE/MethodCosts.txt ]; then
+    echo "Error: not a BattleCode directory: $BATTLECODE"
+    exit
 fi
 
 mkdir -p $BATTLECODE/repos

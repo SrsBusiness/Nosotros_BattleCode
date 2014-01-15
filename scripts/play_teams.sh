@@ -1,5 +1,14 @@
 #!/bin/sh
 OUR_TEAM="Nosotros_BattleCode"
+MAP="rushlane"
+
+match() {
+    cd $BATTLECODE
+    dflags="-Dbc.game.team-a=$OUR_TEAM -Dbc.game.team-b=$1 -Dbc.game.maps=$MAP"
+    lflags="-classpath bin:bin/*:lib/*"
+    args="-c /dev/null -h -n"
+    java $dflags $lflags battlecode.server.Main $args | grep -Eo '[^ ]+ \([AB]\) wins' | xargs -0 printf "Playing team: $1\n%s\n"
+}
 
 if [[ -z "$BATTLECODE" ]]; then
   export BATTLECODE=$HOME/battlecode
@@ -10,49 +19,11 @@ if [ ! -e $BATTLECODE/MethodCosts.txt ]; then
     exit
 fi
 
-cat > $BATTLECODE/bc.conf <<EOF
-# Match server settings
-bc.server.throttle=yield
-bc.server.throttle-count=50
-bc.server.mode=headless
+if [[ -n "$1" ]]; then
+    match "$1"
+    exit
+fi
 
-# Game engine settings
-bc.engine.debug-methods=false
-bc.engine.silence-a=true
-bc.engine.silence-b=true
-bc.engine.gc=false
-bc.engine.gc-rounds=50
-bc.engine.upkeep=true
-bc.engine.breakpoints=false
-bc.engine.bytecodes-used=true
-
-# Client settings
-bc.client.opengl=false
-bc.client.use-models=true
-bc.client.renderprefs2d=
-bc.client.renderprefs3d=
-bc.client.sound-on=true
-bc.client.check-updates=true
-bc.client.viewer-delay=50
-
-# Headless settings - for "ant file"
-bc.game.maps=rushlane
-bc.game.team-a=player_a
-bc.game.team-b=$OUR_TEAM
-bc.server.save-file=match.rms
-
-# Transcriber settings
-bc.server.transcribe-input=matches\\match.rms
-bc.server.transcribe-output=matches\\transcribed.txt
-EOF
-
-cd $BATTLECODE
-ant clean > /dev/null
-ant build > /dev/null
-find bin -type dir -depth 1 -print0 | while read -d $'\0' -r file ; do
-    team=$(basename "$file")
-    printf 'Playing team: %s\n' "$team"
-    sed -i ".old" "s/player_a/$team/g" bc.conf
-    java -classpath ./bin/:./bin/*:./lib/* battlecode.server.Main | grep -Eo '[^ ]+ \([AB]\) wins'
-    mv bc.conf.old bc.conf
-done
+$(cd $BATTLECODE ant clean > /dev/null )
+$(cd $BATTLECODE ant build > /dev/null )
+ls $BATTLECODE/bin | parallel --no-notice $0 {}

@@ -6,25 +6,50 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotType;
 import battlecode.common.*;
 import java.util.*;
+import Nosotros_BattleCode.Point;
+
 
 public class RobotPlayer {
     static Random rand;
-/*
-    private static Direction chooseDir(Robot[] robots, RobotController rc) throws Exception{
-        if (rand.nextInt(4) < 2) {
-            return directions[rand.nextInt(8)];
-        }
-        Robot weakest = null;
-        for(Robot r : robots){
-            double i;
-            if((i = rc.senseRobotInfo(r).health) < lowest){
-                lowest = i; 
-                weakest = r;
-            }
-        }
-        return weakest;
+    
+    private static Point getForceVector(MapLocation src, MapLocation dst, double c1, double c2) {
+        Point unitVector = new Point(dst.x - src.x, dst.y - src.y);
+        //TODO: investigate bytecode costs
+        double magnitude = unitVector.distanceSq(0.0, 0.0);
+        unitVector.setLocation((c1*unitVector.getX()/magnitude)+c2, (c1*unitVector.getY()/magnitude)+c2);
+        return unitVector;
     }
-*/ 
+
+    private static Direction chooseDir(Robot[] robots, RobotController rc) throws Exception{
+        Direction[] directions = {Direction.NORTH, 
+            Direction.NORTH_EAST, 
+            Direction.EAST, 
+            Direction.SOUTH_EAST, 
+            Direction.SOUTH, 
+            Direction.SOUTH_WEST, 
+            Direction.WEST, 
+            Direction.NORTH_WEST};
+        //Input: all nearby robots and obstacles
+        //Output: best direction
+        //TODO: fill in terrain to prevent getting stuck.
+        //TODO: pheremone trail
+        
+        //Use potential fields to judge next position.
+        Point bestDir = new Point(0.0, 0.0);
+        MapLocation myLocation = rc.getLocation();
+        MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
+        Direction enemyDir = myLocation.directionTo(enemyHQLocation);
+        //If in range of enemy HQ, leave.
+        if (myLocation.distanceSquaredTo(enemyHQLocation) <= 15*15) {
+            return enemyDir.opposite();
+        } else if (rand.nextInt(4) < 3) {
+            return directions[rand.nextInt(8)];
+        } else {
+            return enemyDir;
+            //Point enemyVector = getForceVector(myLocation, enemyHQLocation, 3, -45);
+        }
+    }
+    
     private static Robot getLowest(Robot[] robots, RobotController rc) throws Exception{
         double lowest = (double)Integer.MAX_VALUE;
         Robot weakest = null;
@@ -57,7 +82,6 @@ public class RobotPlayer {
             switch(rc.getType()){
                 case HQ:
                     try {					
-
                         Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
                         //Check if a robot is spawnable and spawn one if it is
                         if (rc.isActive() && rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
@@ -77,16 +101,15 @@ public class RobotPlayer {
                         if (rc.isActive()) {
                             int action = (rc.getRobot().getID()*rand.nextInt(101) + 50)%101;
                             //Construct a PASTR
-                             
                             Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
                             if (nearbyEnemies.length > 0) {
-                                    rc.attackSquare(rc.senseRobotInfo(getLowest(nearbyEnemies, rc)).location);
+                                rc.attackSquare(rc.senseRobotInfo(getLowest(nearbyEnemies, rc)).location);
                                 //Move in a random direction
-                            } else if (action < 1 && rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) > 2) {
+                            } else if (action < 1 && rc.getLocation().distanceSquaredTo(rc.senseHQLocation()) < 300) {
                                 rc.construct(RobotType.PASTR);
                                 //Attack a random nearby enemy
                             } else if (action < 80) {
-                                Direction moveDirection = directions[rand.nextInt(8)];
+                                Direction moveDirection = chooseDir(nearbyEnemies, rc);
                                 if (rc.canMove(moveDirection)) {
                                     rc.move(moveDirection);
                                 }

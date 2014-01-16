@@ -8,21 +8,6 @@ import battlecode.common.*;
 import java.util.*;
 
 public class RobotPlayer {
-    static Random rand;
-    static Direction[] directions = {
-        Direction.NORTH, 
-        Direction.NORTH_EAST, 
-        Direction.EAST, 
-        Direction.SOUTH_EAST, 
-        Direction.SOUTH, 
-        Direction.SOUTH_WEST, 
-        Direction.WEST, 
-        Direction.NORTH_WEST };
-    static MapLocation enemyHQLocation;
-    static Direction enemyDir;
-    static int lifeTurn = 0;
-    static ArrayList<Integer> robotIDs = new ArrayList<Integer>(25);
-    static int broadcastIn;
 
     private static Vector getForceVector(MapLocation src, MapLocation dst, double c1, double c2) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
@@ -32,14 +17,13 @@ public class RobotPlayer {
         return force;
     }
 
-    private static Direction chooseDir(RobotController rc) throws Exception{
+    public static Direction chooseDir(RobotController rc) throws Exception{
         //Input: all nearby robots and obstacles
         //Output: best direction
         //
         //TODO: pheremone trail
         //TODO: fill in terrain to prevent getting stuck.
-        
-        lifeTurn = 0;
+
         //Use potential fields to judge next position.
         Vector bestDir = new Vector(0.0, 0.0);
         MapLocation myLocation = rc.getLocation();
@@ -54,7 +38,7 @@ public class RobotPlayer {
             //Charge mode: have all units attempt to camp at the enemy base.
             case 0:
                 count = 0;
-                enemyHQVector = getForceVector(myLocation, enemyHQLocation, 3, -46);
+                //enemyHQVector = getForceVector(myLocation, enemyHQLocation, 3, -46);
                 if (allies.length > 1) {
                     for (Robot r: allies) {
                         RobotInfo info = rc.senseRobotInfo(r);
@@ -101,8 +85,8 @@ public class RobotPlayer {
         bestDir.addVector(enemyForceVector);
         return bestDir.toDirectionEnum();
     }
-    
-    private static Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
+
+    public static Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
         //Choose the best robot to attack. Prioritizes low HP units and SOLDIERS over PASTRS. Do not attack HQs (futile).
         double lowest = (double)Integer.MAX_VALUE;
         Robot weakest = null;
@@ -120,27 +104,19 @@ public class RobotPlayer {
     }
 
     public static void run(RobotController rc) {
-        MapLocation myLocation;
-        enemyHQLocation = rc.senseEnemyHQLocation(); 
-        rand = new Random();
-        lifeTurn = 0;
-        RobotType type = rc.getType();
-        int id = 
-        while (true) {
-            myLocation = rc.getLocation();
-            enemyDir = myLocation.directionTo(enemyHQLocation);
-            switch (type) {
-                case HQ:
-                    HQ.HQ_run(); 
-                    break;
-                case SOLDIER:
-                    Soldier.Solder_run(); 
-                    break;
-                case NOISETOWER:case PASTR:
-                    break;
-            }
-            System.out.println(Clock.getBytecodeNum());
-            rc.yield();
+        switch (rc.getType()) {
+            case HQ:
+                HQ.HQ_run(rc); 
+                break;
+            case SOLDIER:
+                Soldier.Soldier_run(rc); 
+                break;
+            case NOISETOWER:
+                NoiseTower.NoiseTower_run(rc);
+                break;
+            case PASTR:
+                while(true)
+                    rc.yield();
         }
     }
 }

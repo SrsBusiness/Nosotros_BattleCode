@@ -22,11 +22,17 @@ class HQ {
     static ArrayList<Integer> robotIDs = new ArrayList<Integer>(25);
     static int pastrMaker;
     static int noisetowerMaker;
-
-    static void HQ_run(RobotController rc) {
+    static int[] pirates = new int[2];
+    static void run(RobotController rc) {
         enemyHQLocation = rc.senseEnemyHQLocation(); 
         enemyDir = rc.senseHQLocation().directionTo(enemyHQLocation);
-
+        // location of enemy pastr. if non-negative, pirates swarm it
+        try {
+            rc.broadcast(20, -1);
+            rc.broadcast(21, -1);
+        } catch(Exception e) {
+            System.err.println(e + " HQ Could Not BroadCast");
+        }
         while(true) {
             try {
                 //Single-robot commands executed through broadcasts.
@@ -43,6 +49,14 @@ class HQ {
                     noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                     rc.broadcast(1, noisetowerMaker);
                     rc.broadcast(2, 2);
+                } else if (robotIDs.size() == 14 && pirates[0] == 0) {
+                    pirates[0] = robotIDs.get(robotIDs.size() - 1);
+                    rc.broadcast(1, pirates[0]);
+                    rc.broadcast(2, 3);
+                } else if (robotIDs.size() == 15 && pirates[1] == 0) {
+                    pirates[1] = robotIDs.get(robotIDs.size() - 1);
+                    rc.broadcast(1, pirates[0]);
+                    rc.broadcast(2, 4);
                 }
                 //Check if a robot is spawnable and spawn one if it is
                 if (rc.isActive() &&

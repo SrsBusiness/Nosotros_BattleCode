@@ -18,7 +18,7 @@ class NoiseTower{
         Direction.NORTH_WEST };
     static MapLocation target;
  
-    static void NoiseTower_run(RobotController rc){
+    static void run(RobotController rc){
         target = rc.getLocation();
         target.add(6,0);
         while(true){

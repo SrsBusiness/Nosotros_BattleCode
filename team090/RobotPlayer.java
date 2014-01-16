@@ -105,13 +105,13 @@ public class RobotPlayer {
     public static void run(RobotController rc) {
         switch (rc.getType()) {
             case HQ:
-                HQ.HQ_run(rc); 
+                HQ.run(rc); 
                 break;
             case SOLDIER:
-                Soldier.Soldier_run(rc); 
+                Soldier.run(rc); 
                 break;
             case NOISETOWER:
-                NoiseTower.NoiseTower_run(rc);
+                NoiseTower.run(rc);
                 break;
             case PASTR:
                 while(true)

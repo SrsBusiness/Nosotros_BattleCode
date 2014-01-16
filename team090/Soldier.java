@@ -20,8 +20,8 @@ class Soldier {
     static int lifeTurn = 0;
     static int broadcastIn;
     static int commandMode;
-
-    static void Soldier_run(RobotController rc) {
+    
+    static void run(RobotController rc) {
         while(true){
             rand = new Random();
             try {
@@ -58,19 +58,19 @@ class Soldier {
                             break;
                         //PASTR cowgirl
                         case 1:
-                            if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 0) {
-                                rc.move(Direction.WEST);
-                            } else {
-                                rc.construct(RobotType.PASTR);
-                            }
+                            CowGirl.run(rc);  
                             break;
                         //Noisetower cowboy
                         case 2:
-                            if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
-                                rc.move(Direction.WEST);
-                            } else {
-                                rc.construct(RobotType.NOISETOWER);
-                            }
+                            CowBoy.run(rc); 
+                            break;
+                        // pirate #1 - furthest corner from enemy
+                        case 3:
+                            Pirate.run(rc);
+                            break;
+                        // pirate #2 - 2nd furthest corner from enemy
+                        case 4:
+                            Pirate.run(rc);
                             break;
                     }
                 }
@@ -80,4 +80,7 @@ class Soldier {
             rc.yield();
         }
     }
+
+    // returns corner locations in decending order of distance from enemy HQ
+    
 }

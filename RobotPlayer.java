@@ -124,11 +124,11 @@ public class RobotPlayer {
         enemyHQLocation = rc.senseEnemyHQLocation(); 
         rand = new Random();
         lifeTurn = 0;
-
+        RobotType type = rc.getType();
         while (true) {
             myLocation = rc.getLocation();
             enemyDir = myLocation.directionTo(enemyHQLocation);
-            switch (rc.getType()) {
+            switch (type) {
                 case HQ:
                     try {
                         broadcastIn = rc.readBroadcast(0);

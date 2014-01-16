@@ -22,7 +22,6 @@ class Soldier {
     static int commandMode;
     
     static void run(RobotController rc) {
-        while(true){
             rand = new Random();
             try {
                 if (rc.isActive()) {
@@ -39,23 +38,30 @@ class Soldier {
                     switch (commandMode) {
                         //Default behavior
                         case 0:
-                            Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                            if (nearbyEnemies.length > 0) {
-                                rc.attackSquare(rc.senseRobotInfo(RobotPlayer.getBestTarget(nearbyEnemies, rc)).location);
-                            } else {
-                                Direction moveDirection = RobotPlayer.chooseDir(rc);
-                                if (rc.canMove(moveDirection)) {
-                                    rc.move(moveDirection);
-                                } else {
-                                    //Try a random direction
-                                    //TODO: try each dir
-                                    Direction randChoice = directions[rand.nextInt(8)];
-                                    if (rc.canMove(randChoice)) {
-                                        rc.move(randChoice);
+                            while(true) {
+                                try {
+                                    if(rc.isActive()){
+                                        Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
+                                        if (nearbyEnemies.length > 0) {
+                                            rc.attackSquare(rc.senseRobotInfo(RobotPlayer.getBestTarget(nearbyEnemies, rc)).location);
+                                        } else {
+                                            Direction moveDirection = RobotPlayer.chooseDir(rc);
+                                            if (rc.canMove(moveDirection)) {
+                                                rc.move(moveDirection);
+                                            } else {
+                                                //Try a random direction
+                                                //TODO: try each dir
+                                                Direction randChoice = directions[rand.nextInt(8)];
+                                                if (rc.canMove(randChoice)) {
+                                                    rc.move(randChoice);
+                                                }
+                                            }
+                                        }
                                     }
+                                } catch(Exception e) {
+                                    System.err.println(e + " Soldier Exception");
                                 }
                             }
-                            break;
                         //PASTR cowgirl
                         case 1:
                             CowGirl.run(rc);  
@@ -78,7 +84,6 @@ class Soldier {
                 System.err.println(e.toString() + "Soldier Exception");
             }
             rc.yield();
-        }
     }
 
     // returns corner locations in decending order of distance from enemy HQ

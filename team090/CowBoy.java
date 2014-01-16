@@ -26,14 +26,16 @@ class CowBoy{
 
     static void run(RobotController rc){
         while(true){
-            try {
-                if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
-                    rc.move(Direction.WEST);
-                } else {
-                    rc.construct(RobotType.NOISETOWER);
+            if(rc.isActive()){
+                try {
+                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
+                        rc.move(Direction.WEST);
+                    } else {
+                        rc.construct(RobotType.NOISETOWER);
+                    }
+                } catch(Exception e) {
+                    System.err.println(e + " CowBoy Exception");
                 }
-            } catch(Exception e) {
-                System.err.println(e + " CowBoy Exception");
             }
         }
     }

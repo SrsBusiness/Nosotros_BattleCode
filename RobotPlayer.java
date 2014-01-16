@@ -1,5 +1,4 @@
-package Nosotros_BattleCode;
-
+package team090;
 import battlecode.common.Direction;
 import battlecode.common.GameConstants;
 import battlecode.common.RobotController;
@@ -8,20 +7,6 @@ import battlecode.common.*;
 import java.util.*;
 
 public class RobotPlayer {
-    static Random rand;
-    static Direction[] directions = {
-        Direction.NORTH, 
-        Direction.NORTH_EAST, 
-        Direction.EAST, 
-        Direction.SOUTH_EAST, 
-        Direction.SOUTH, 
-        Direction.SOUTH_WEST, 
-        Direction.WEST, 
-        Direction.NORTH_WEST };
-    static MapLocation enemyHQLocation;
-    static Direction enemyDir;
-    static ArrayList<Integer> robotIDs = new ArrayList<Integer>(25);
-    static int broadcastIn;
 
     private static Vector getForceVector(MapLocation src, MapLocation dst, double c1, double c2) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
@@ -31,13 +16,12 @@ public class RobotPlayer {
         return force;
     }
 
-    private static Direction chooseDir(RobotController rc) throws Exception{
+    public static Direction chooseDir(RobotController rc) throws Exception{
         //Input: all nearby robots and obstacles
         //Output: best direction
         //
         //TODO: pheremone trail
         //TODO: fill in terrain to prevent getting stuck.
-        
         //Use potential fields to judge next position.
         Vector bestDir = new Vector(0.0, 0.0);
         int mode = 0; //Different modes have different parameters
@@ -74,7 +58,7 @@ public class RobotPlayer {
                     }
                     alliedForceVector.scale(1.0/count);
                 }
-                if (enemies.length > 1) {
+                if (enemies.length != 0) {
                     count = 0;
                     for (Robot r: enemies) {
                         //TODO: add different mode responses and aggression parameter.
@@ -100,8 +84,8 @@ public class RobotPlayer {
         bestDir.addVector(enemyForceVector);
         return bestDir.toDirectionEnum();
     }
-    
-    private static Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
+
+    public static Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
         //Choose the best robot to attack. Prioritizes low HP units and SOLDIERS over PASTRS. Do not attack HQs (futile).
         double lowest = (double)Integer.MAX_VALUE;
         Robot weakest = null;
@@ -119,110 +103,19 @@ public class RobotPlayer {
     }
 
     public static void run(RobotController rc) {
-        MapLocation myLocation;
-        enemyHQLocation = rc.senseEnemyHQLocation(); 
-        rand = new Random();
-        int lifeTurn = 0;
-        int pastrMaker = 0;
-        int noisetowerMaker = 0;
-        int commandMode = 0;
-
-        while (true) {
-            myLocation = rc.getLocation();
-            enemyDir = myLocation.directionTo(enemyHQLocation);
-            switch (rc.getType()) {
-                case HQ:
-                    try {
-                        broadcastIn = rc.readBroadcast(0);
-                        if (broadcastIn != 0) {
-                            robotIDs.add(broadcastIn);
-                            rc.broadcast(0, 0);
-                        }
-                        if (robotIDs.size() == 5 && pastrMaker == 0) {
-                            pastrMaker = robotIDs.get(robotIDs.size()-1);
-                            rc.broadcast(1, pastrMaker);
-                            rc.broadcast(2, 1);
-                        } else if (robotIDs.size() == 6 && noisetowerMaker == 0) {
-                            noisetowerMaker = robotIDs.get(robotIDs.size()-1);
-                            rc.broadcast(1, noisetowerMaker);
-                            rc.broadcast(2, 2);
-                        }
-                        //Check if a robot is spawnable and spawn one if it is
-                        if (rc.isActive() &&
-                                rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
-                            if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
-                                rc.spawn(enemyDir);
-                                //Increment global robot count.
-                                //rc.setTeamMemory(0, rc.getTeamMemory()[0]+1)
-                            }
-                        }
-                        //Attack nearby enemies (range^2 = 15).
-                        Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
-                        if(nearbyEnemies.length > 0) {
-                            rc.attackSquare(rc.senseRobotInfo(getBestTarget(nearbyEnemies, rc)).location);
-                        }
-                    } catch (Exception e) {
-                        System.err.println(e.toString() + "HQ Exception");
-                    }
-                    break;
-                case SOLDIER:
-                    try {
-                        if (rc.isActive()) {
-                            broadcastIn = rc.readBroadcast(1);
-                            lifeTurn++;
-                            if (lifeTurn == 2) {
-                                rc.broadcast(0, rc.getRobot().getID());
-                                lifeTurn++;
-                                //rc.wearHat();
-                            }
-                            //Execute unit-specific duties
-                            if (broadcastIn == rc.getRobot().getID()) {
-                                commandMode = rc.readBroadcast(2);
-                            }
-                            switch (commandMode) {
-                                case 0:
-                                    Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                                    if (nearbyEnemies.length > 0) {
-                                        rc.attackSquare(rc.senseRobotInfo(getBestTarget(nearbyEnemies, rc)).location);
-                                    } else {
-                                        Direction moveDirection = chooseDir(rc);
-                                        if (rc.canMove(moveDirection)) {
-                                            rc.move(moveDirection);
-                                        } else {
-                                            //Try a random direction
-                                            //TODO: try each dir
-                                            Direction randChoice = directions[rand.nextInt(8)];
-                                            if (rc.canMove(randChoice)) {
-                                                rc.move(randChoice);
-                                            }
-                                        }
-                                    }
-                                    break;
-                                case 1:
-                                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 0) {
-                                        rc.move(Direction.WEST);
-                                    } else {
-                                        rc.construct(RobotType.PASTR);
-                                    }
-                                    break;
-                                case 2:
-                                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
-                                        rc.move(Direction.WEST);
-                                    } else {
-                                        rc.construct(RobotType.NOISETOWER);
-                                    }
-                                    break;
-                            }
-                        }
-                    } catch (Exception e) {
-                        System.err.println(e.toString() + "Soldier Exception");
-                    }
-                    break;
-                case NOISETOWER:case PASTR:
-                    break;
-            }
-            //System.out.println(Clock.getBytecodeNum());
-            rc.yield();
+        switch (rc.getType()) {
+            case HQ:
+                HQ.HQ_run(rc); 
+                break;
+            case SOLDIER:
+                Soldier.Soldier_run(rc); 
+                break;
+            case NOISETOWER:
+                NoiseTower.NoiseTower_run(rc);
+                break;
+            case PASTR:
+                while(true)
+                    rc.yield();
         }
     }
 }

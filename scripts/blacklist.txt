@@ -1,4 +1,3 @@
-daytwodebug
 team063
 team113
 T_800
@@ -6,5 +5,4 @@ farmbot_v1
 new_bot_template
 origrestructured
 preskanda
-allOutAttack
-paul
+redux

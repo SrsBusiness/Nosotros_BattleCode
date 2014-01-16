@@ -20,7 +20,6 @@ public class RobotPlayer {
         Direction.NORTH_WEST };
     static MapLocation enemyHQLocation;
     static Direction enemyDir;
-    static int lifeTurn = 0;
     static ArrayList<Integer> robotIDs = new ArrayList<Integer>(25);
     static int broadcastIn;
 
@@ -39,23 +38,23 @@ public class RobotPlayer {
         //TODO: pheremone trail
         //TODO: fill in terrain to prevent getting stuck.
         
-        lifeTurn = 0;
         //Use potential fields to judge next position.
         Vector bestDir = new Vector(0.0, 0.0);
-        MapLocation myLocation = rc.getLocation();
         int mode = 0; //Different modes have different parameters
         Robot[] allies = rc.senseNearbyGameObjects(Robot.class, 35, rc.getTeam());
         Robot[] enemies = rc.senseNearbyGameObjects(Robot.class, 35, rc.getTeam().opponent());
         Vector enemyHQVector = new Vector(0.0, 0.0);
         Vector alliedForceVector = new Vector(0.0, 0.0);
         Vector enemyForceVector = new Vector(0.0, 0.0);
+        MapLocation myLocation = rc.getLocation();
+        MapLocation enemyHQLocation = rc.senseEnemyHQLocation(); //Should be a static
         int count;
         switch (mode) {
             //Charge mode: have all units attempt to camp at the enemy base.
             case 0:
                 count = 0;
                 enemyHQVector = getForceVector(myLocation, enemyHQLocation, 3, -46);
-                if (allies.length > 1) {
+                if (allies.length != 0) {
                     for (Robot r: allies) {
                         RobotInfo info = rc.senseRobotInfo(r);
                         switch (info.type) {
@@ -123,7 +122,10 @@ public class RobotPlayer {
         MapLocation myLocation;
         enemyHQLocation = rc.senseEnemyHQLocation(); 
         rand = new Random();
-        lifeTurn = 0;
+        int lifeTurn = 0;
+        int pastrMaker = 0;
+        int noisetowerMaker = 0;
+        int commandMode = 0;
 
         while (true) {
             myLocation = rc.getLocation();
@@ -134,9 +136,16 @@ public class RobotPlayer {
                         broadcastIn = rc.readBroadcast(0);
                         if (broadcastIn != 0) {
                             robotIDs.add(broadcastIn);
+                            rc.broadcast(0, 0);
                         }
-                        if (robotIDs.size() == 5) {
-                            rc.broadcast(1, robotIDs[robotIDs.size()-1]);
+                        if (robotIDs.size() == 5 && pastrMaker == 0) {
+                            pastrMaker = robotIDs.get(robotIDs.size()-1);
+                            rc.broadcast(1, pastrMaker);
+                            rc.broadcast(2, 1);
+                        } else if (robotIDs.size() == 6 && noisetowerMaker == 0) {
+                            noisetowerMaker = robotIDs.get(robotIDs.size()-1);
+                            rc.broadcast(1, noisetowerMaker);
+                            rc.broadcast(2, 2);
                         }
                         //Check if a robot is spawnable and spawn one if it is
                         if (rc.isActive() &&
@@ -159,34 +168,51 @@ public class RobotPlayer {
                 case SOLDIER:
                     try {
                         if (rc.isActive()) {
+                            broadcastIn = rc.readBroadcast(1);
                             lifeTurn++;
-                            if (lifeTurn == 1) {
+                            if (lifeTurn == 2) {
                                 rc.broadcast(0, rc.getRobot().getID());
+                                lifeTurn++;
+                                //rc.wearHat();
                             }
-                            Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                            if (nearbyEnemies.length > 0) {
-                                rc.attackSquare(rc.senseRobotInfo(getBestTarget(nearbyEnemies, rc)).location);
-                            } else if (
-                                       rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam()).length == 0) {
-                                rc.construct(RobotType.PASTR);
-                            } else {// if (action < 80) {
-                                Direction moveDirection = chooseDir(rc);
-                                if (rc.canMove(moveDirection)) {
-                                    rc.move(moveDirection);
-                                } else {
-                                    //Try a random direction
-                                    //TODO: try each dir
-                                    Direction randChoice = directions[rand.nextInt(8)];
-                                    if (rc.canMove(randChoice)) {
-                                        rc.move(randChoice);
+                            //Execute unit-specific duties
+                            if (broadcastIn == rc.getRobot().getID()) {
+                                commandMode = rc.readBroadcast(2);
+                            }
+                            switch (commandMode) {
+                                case 0:
+                                    Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
+                                    if (nearbyEnemies.length > 0) {
+                                        rc.attackSquare(rc.senseRobotInfo(getBestTarget(nearbyEnemies, rc)).location);
+                                    } else {
+                                        Direction moveDirection = chooseDir(rc);
+                                        if (rc.canMove(moveDirection)) {
+                                            rc.move(moveDirection);
+                                        } else {
+                                            //Try a random direction
+                                            //TODO: try each dir
+                                            Direction randChoice = directions[rand.nextInt(8)];
+                                            if (rc.canMove(randChoice)) {
+                                                rc.move(randChoice);
+                                            }
+                                        }
                                     }
-                                }
-                            }/* else {
-                                //Sneak towards the enemy
-                                //if (rc.canMove(toEnemy)) {
-                                //    rc.sneak(toEnemy);
-                                //}
-                            }*/
+                                    break;
+                                case 1:
+                                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 0) {
+                                        rc.move(Direction.WEST);
+                                    } else {
+                                        rc.construct(RobotType.PASTR);
+                                    }
+                                    break;
+                                case 2:
+                                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
+                                        rc.move(Direction.WEST);
+                                    } else {
+                                        rc.construct(RobotType.NOISETOWER);
+                                    }
+                                    break;
+                            }
                         }
                     } catch (Exception e) {
                         System.err.println(e.toString() + "Soldier Exception");
@@ -195,7 +221,7 @@ public class RobotPlayer {
                 case NOISETOWER:case PASTR:
                     break;
             }
-            System.out.println(Clock.getBytecodeNum());
+            //System.out.println(Clock.getBytecodeNum());
             rc.yield();
         }
     }

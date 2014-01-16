@@ -135,6 +135,9 @@ public class RobotPlayer {
                         if (broadcastIn != 0) {
                             robotIDs.add(broadcastIn);
                         }
+                        if (robotIDs.size() == 5) {
+                            rc.broadcast(1, robotIDs[robotIDs.size()-1]);
+                        }
                         //Check if a robot is spawnable and spawn one if it is
                         if (rc.isActive() &&
                                 rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {

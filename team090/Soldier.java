@@ -17,24 +17,33 @@ class Soldier {
         Direction.WEST, 
         Direction.NORTH_WEST };
     static Random rand;
+    static RobotController rc;
     static int lifeTurn = 0;
     static int broadcastIn;
     static int commandMode;
     
+    static MapLocation myLocation;
+    static MapLocation target = null;
+
     static void run(RobotController rc) {
-            rand = new Random();
+        rand = new Random();
+        while(true) {
+            System.out.println(lifeTurn);
             try {
                 if (rc.isActive()) {
                     broadcastIn = rc.readBroadcast(1);
+                    if (broadcastIn == rc.getRobot().getID()) {
+                        commandMode = rc.readBroadcast(2);
+                        rc.broadcast(1, 0);
+                        rc.broadcast(2, 0);
+                        System.out.println(commandMode);
+                    }
                     lifeTurn++;
                     if (lifeTurn == 2) {
                         rc.broadcast(0, rc.getRobot().getID());
                         lifeTurn++;
                     }
                     //Execute unit-specific duties
-                    if (broadcastIn == rc.getRobot().getID()) {
-                        commandMode = rc.readBroadcast(2);
-                    }
                     switch (commandMode) {
                         //Default behavior
                         case 0:
@@ -85,7 +94,5 @@ class Soldier {
             }
             rc.yield();
     }
-
     // returns corner locations in decending order of distance from enemy HQ
-    
 }

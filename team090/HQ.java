@@ -23,6 +23,7 @@ class HQ {
     static int pastrMaker;
     static int noisetowerMaker;
     static int[] pirates = new int[2];
+
     static void run(RobotController rc) {
         enemyHQLocation = rc.senseEnemyHQLocation(); 
         enemyDir = rc.senseHQLocation().directionTo(enemyHQLocation);

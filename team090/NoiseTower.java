@@ -23,27 +23,7 @@ class NoiseTower{
         target.add(6,0);
         while(true){
             try {
-                if (rc.isActive()) {
-                    /*
-                    rotate += lookRate;
-                    if(rotCount % 16 == 0) {
-                        dist-=2;
-                        if(dist < minDist) {
-                            dist = maxDist;
-                        }
-                    }
-                    MapLocation attack = null;
-                    int localDist = dist;
-                    while(attack == null && localDist > 0) {
-                        attack = getAttackTile(rotate, localDist);
-                        localDist--;
-                    }
-                    rotCount++;
-                    rc.attackSquare(attack);
-                    */
-                    rc.attackSquare(target);
-                    //rc.attackSquareLight(target);
-                }
+                rc.attackSquareLight(target);
             } catch (Exception e) {
                 System.err.println(e.toString() + "Noisetower Exception");
             }

@@ -8,36 +8,40 @@ import java.util.*;
 
 public class RobotPlayer {
 
-    private static Vector getForceVector(MapLocation src, MapLocation dst, double c1, double c2) {
+    private static Vector getForceVector(MapLocation src, MapLocation dst) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
         double r = Math.pow(force.getMagnitudeSq(), 0.5);
-        force = force.getUnitVector();
-        //TODO: Apply GA'ed potential function.
         return force;
     }
 
     public static Direction chooseDir(RobotController rc) throws Exception{
-        //Input: all nearby robots and obstacles
-        //Output: best direction
-        //
         //TODO: pheremone trail
         //TODO: fill in terrain to prevent getting stuck.
         //Use potential fields to judge next position.
-        Vector bestDir = new Vector(0.0, 0.0);
         int mode = 0; //Different modes have different parameters
-        Robot[] allies = rc.senseNearbyGameObjects(Robot.class, 35, rc.getTeam());
-        Robot[] enemies = rc.senseNearbyGameObjects(Robot.class, 35, rc.getTeam().opponent());
+        Vector bestDir = new Vector(0.0, 0.0);
+
+        Team myTeam = rc.getTeam();
+        MapLocation myLocation = rc.myLocation();
+        MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
+
         Vector enemyHQVector = new Vector(0.0, 0.0);
         Vector alliedForceVector = new Vector(0.0, 0.0);
         Vector enemyForceVector = new Vector(0.0, 0.0);
-        MapLocation myLocation = rc.getLocation();
-        MapLocation enemyHQLocation = rc.senseEnemyHQLocation(); //Should be a static
+
+        Robot[] alliedRobots = rc.senseNearbyGameObjects(Robot.class, 35, myTeam);
+        Robot[] enemyRobots = rc.senseNearbyGameObjects(Robot.class, 35, myTeam.opponent());
+
         int count;
         switch (mode) {
-            //Charge mode: have all units attempt to camp at the enemy base.
+            //Charge mode:
+            //Go to the enemyHQ, but keep a distance.
+            //Have all units attempt to camp and surround the enemy base.
+            //Don't walk alone blindly either. Walk with buddies.
             case 0:
                 count = 0;
-                enemyHQVector = getForceVector(myLocation, enemyHQLocation, 3, -46);
+                enemyHQVector = getForceVector(myLocation, enemyHQLocation);
+                enemyHQVector = enemyHQVector.applyLogistic(15);
                 if (allies.length != 0) {
                     for (Robot r: allies) {
                         RobotInfo info = rc.senseRobotInfo(r);

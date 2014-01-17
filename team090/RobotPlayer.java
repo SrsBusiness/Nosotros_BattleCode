@@ -37,7 +37,7 @@ public class RobotPlayer {
             //Charge mode:
             //Go to the enemyHQ, but keep a distance.
             //Have all units attempt to camp and surround the enemy base.
-            //Don't walk alone blindy either. Walk with buddies.
+            //Don't walk alone blindly either. Walk with buddies.
             case 0:
                 count = 0;
                 enemyHQVector = getForceVector(myLocation, enemyHQLocation);
@@ -107,21 +107,19 @@ public class RobotPlayer {
     }
 
     public static void run(RobotController rc) {
-        while (true) {
-            switch (rc.getType()) {
-                case HQ:
-                    HQ.HQ_run(rc); 
-                    break;
-                case SOLDIER:
-                    Soldier.Soldier_run(); 
-                    break;
-                case NOISETOWER:
-                    NoiseTower.NoiseTower_run(rc);
-                    break;
-                case PASTR:
-                    while(true)
-                        rc.yield();
-            }
+        switch (rc.getType()) {
+            case HQ:
+                HQ.run(rc); 
+                break;
+            case SOLDIER:
+                Soldier.run(rc); 
+                break;
+            case NOISETOWER:
+                NoiseTower.run(rc);
+                break;
+            case PASTR:
+                while(true)
+                    rc.yield();
         }
     }
 }

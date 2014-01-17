@@ -17,25 +17,32 @@ class Soldier {
         Direction.WEST, 
         Direction.NORTH_WEST };
     static Random rand;
+    static RobotController rc;
     static int lifeTurn = 0;
     static int broadcastIn;
     static int commandMode;
+    static MapLocation myLocation;
+    static MapLocation target = null;
 
-    static void Soldier_run(RobotController rc) {
+    static void Soldier_run() {
+        rand = new Random();
         while(true){
-            rand = new Random();
+            System.out.println(lifeTurn);
             try {
                 if (rc.isActive()) {
                     broadcastIn = rc.readBroadcast(1);
+                    if (broadcastIn == rc.getRobot().getID()) {
+                        commandMode = rc.readBroadcast(2);
+                        rc.broadcast(1, 0);
+                        rc.broadcast(2, 0);
+                        System.out.println(commandMode);
+                    }
                     lifeTurn++;
                     if (lifeTurn == 2) {
                         rc.broadcast(0, rc.getRobot().getID());
                         lifeTurn++;
                     }
                     //Execute unit-specific duties
-                    if (broadcastIn == rc.getRobot().getID()) {
-                        commandMode = rc.readBroadcast(2);
-                    }
                     switch (commandMode) {
                         //Default behavior
                         case 0:
@@ -58,18 +65,73 @@ class Soldier {
                             break;
                         //PASTR cowgirl
                         case 1:
-                            if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 0) {
-                                rc.move(Direction.WEST);
-                            } else {
+                            System.out.println("Cowgirl's turn.");
+                            if (target == null) {
+                                System.out.println("Setting PASTR location.");
+                                target = rc.senseHQLocation().add(2, 2);
+                            }
+                            myLocation = rc.getLocation();
+                            //Move to target, then make PASTR.
+                            if (myLocation.equals(target)) {
                                 rc.construct(RobotType.PASTR);
+                            } else {
+                                //TODO: implement real pathfinding to target.
+                                Direction bestChoice;
+                                if (myLocation.y < target.y) {
+                                    bestChoice = Direction.SOUTH;
+                                } else if (myLocation.y > target.y) {
+                                    bestChoice = Direction.NORTH;
+                                } else if (myLocation.x > target.x) {
+                                    bestChoice = Direction.WEST;
+                                } else if (myLocation.x < target.x) {
+                                    bestChoice = Direction.EAST;
+                                } else {
+                                    bestChoice = Direction.NONE;
+                                }
+                                if (bestChoice != Direction.NONE && rc.canMove(bestChoice)) {
+                                    rc.move(bestChoice);
+                                } else {
+                                    //TODO: try each dir
+                                    Direction randChoice = directions[rand.nextInt(8)];
+                                    if (rc.canMove(randChoice)) {
+                                        rc.move(randChoice);
+                                    }
+                                }
                             }
                             break;
                         //Noisetower cowboy
                         case 2:
-                            if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
-                                rc.move(Direction.WEST);
-                            } else {
+                            if (target == null) {
+                                System.out.println("Setting Noisetower location.");
+                                target = rc.senseHQLocation().add(2, 1);
+                            }
+                            myLocation = rc.getLocation();
+                            if (myLocation.equals(target)) {
                                 rc.construct(RobotType.NOISETOWER);
+                                return;
+                            } else {
+                                //TODO: implement real pathfinding to target.
+                                Direction bestChoice;
+                                if (myLocation.y < target.y) {
+                                    bestChoice = Direction.SOUTH;
+                                } else if (myLocation.y > target.y) {
+                                    bestChoice = Direction.NORTH;
+                                } else if (myLocation.x > target.x) {
+                                    bestChoice = Direction.WEST;
+                                } else if (myLocation.x < target.x) {
+                                    bestChoice = Direction.EAST;
+                                } else {
+                                    bestChoice = Direction.NONE;
+                                }
+                                if (bestChoice != Direction.NONE && rc.canMove(bestChoice)) {
+                                    rc.move(bestChoice);
+                                } else {
+                                    //TODO: try each dir
+                                    Direction randChoice = directions[rand.nextInt(8)];
+                                    if (rc.canMove(randChoice)) {
+                                        rc.move(randChoice);
+                                    }
+                                } 
                             }
                             break;
                     }

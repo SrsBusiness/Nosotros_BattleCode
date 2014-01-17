@@ -43,8 +43,11 @@ class HQ {
                     noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                     rc.broadcast(1, noisetowerMaker);
                     rc.broadcast(2, 2);
+                } else {
+                    rc.broadcast(1, 0);
+                    rc.broadcast(2, 0);
                 }
-                //Check if a robot is spawnable and spawn one if it is
+                 //Check if a robot is spawnable and spawn one if it is
                 if (rc.isActive() &&
                     rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
                     if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {

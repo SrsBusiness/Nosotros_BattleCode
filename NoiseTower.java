@@ -19,11 +19,10 @@ class NoiseTower{
     static MapLocation target;
  
     static void NoiseTower_run(RobotController rc){
-        target = rc.getLocation();
-        target.add(6,0);
+        target = rc.getLocation().add(4,0);
         while(true){
             try {
-                if (rc.isActive()) {
+                //if (rc.isActive()) {
                     /*
                     rotate += lookRate;
                     if(rotCount % 16 == 0) {
@@ -43,7 +42,7 @@ class NoiseTower{
                     */
                     rc.attackSquare(target);
                     //rc.attackSquareLight(target);
-                }
+                //}
             } catch (Exception e) {
                 System.err.println(e.toString() + "Noisetower Exception");
             }

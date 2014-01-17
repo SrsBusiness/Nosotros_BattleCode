@@ -22,12 +22,12 @@ public class RobotPlayer {
         Vector bestDir = new Vector(0.0, 0.0);
 
         Team myTeam = rc.getTeam();
-        MapLocation myLocation = rc.myLocation();
-        MapLocation enemyHQLocation = rc.senseEnemyHQLocation();
+        MapLocation myLoc = rc.getLocation();
+        MapLocation enemyHQLoc = rc.senseEnemyHQLocation();
 
-        Vector enemyHQVector = new Vector(0.0, 0.0);
-        Vector alliedForceVector = new Vector(0.0, 0.0);
-        Vector enemyForceVector = new Vector(0.0, 0.0);
+        Vector enemyHQForce = new Vector(0.0, 0.0);
+        Vector alliedForce = new Vector(0.0, 0.0);
+        Vector enemyForce = new Vector(0.0, 0.0);
 
         Robot[] alliedRobots = rc.senseNearbyGameObjects(Robot.class, 35, myTeam);
         Robot[] enemyRobots = rc.senseNearbyGameObjects(Robot.class, 35, myTeam.opponent());
@@ -40,52 +40,52 @@ public class RobotPlayer {
             //Don't walk alone blindly either. Walk with buddies.
             case 0:
                 count = 0;
-                enemyHQVector = getForceVector(myLocation, enemyHQLocation);
-                enemyHQVector = enemyHQVector.applyLogistic(15);
-                if (allies.length != 0) {
-                    for (Robot r: allies) {
+                enemyHQForce = getForceVector(myLoc, enemyHQLoc);
+                //enemyHQForce.applyLogistic(15);
+                if (alliedRobots.length != 0) {
+                    for (Robot r: alliedRobots) {
                         RobotInfo info = rc.senseRobotInfo(r);
                         switch (info.type) {
                             case SOLDIER: 
                                 count++;
-                                alliedForceVector.addVector(getForceVector(myLocation, info.location, 6, -15));
+                                alliedForce.addVector(getForceVector(myLoc, info.location));
                                 break;
                             case PASTR:
                                 //count++;
-                                //alliedForceVector.addVector(getForceVector(myLocation, info.location, 12, -18));
+                                //alliedForceVector.addVector(getForceVector(myLoc, info.location, 12, -18));
                                 break;
                             case HQ: 
                                 count++;
-                                alliedForceVector.addVector(getForceVector(myLocation, info.location, -3, 0));
+                                alliedForce.addVector(getForceVector(myLoc, info.location));
                                 break;
                         }
                     }
-                    alliedForceVector.scale(1.0/count);
+                    alliedForce.scale(1.0/count);
                 }
-                if (enemies.length != 0) {
+                if (enemyRobots.length != 0) {
                     count = 0;
-                    for (Robot r: enemies) {
+                    for (Robot r: enemyRobots) {
                         //TODO: add different mode responses and aggression parameter.
                         RobotInfo info = rc.senseRobotInfo(r);
                         switch (info.type) {
                             case SOLDIER: 
                                 count++;
-                                enemyForceVector.addVector(getForceVector(myLocation, info.location, 1, 0));
+                                enemyForce.addVector(getForceVector(myLoc, info.location));
                                 break;
                             case PASTR: 
-                                enemyForceVector.addVector(getForceVector(myLocation, info.location, 6, 0));
+                                enemyForce.addVector(getForceVector(myLoc, info.location));
                                 break;
                         }
                     }
-                    enemyForceVector.scale(1.0/count);
+                    enemyForce.scale(1.0/count);
                 }
                 break;
             case 1:
                 break;
         }
-        bestDir.addVector(enemyHQVector);
-        bestDir.addVector(alliedForceVector);
-        bestDir.addVector(enemyForceVector);
+        bestDir.addVector(enemyHQForce);
+        bestDir.addVector(alliedForce);
+        bestDir.addVector(enemyForce);
         return bestDir.toDirectionEnum();
     }
 

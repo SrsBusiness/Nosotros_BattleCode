@@ -21,78 +21,85 @@ class Soldier {
     static int lifeTurn = 0;
     static int broadcastIn;
     static int commandMode;
-    
+
     static MapLocation myLocation;
     static MapLocation target = null;
 
     static void run(RobotController rc) {
         rand = new Random();
-        while(true) {
-            System.out.println(lifeTurn);
-            try {
-                if (rc.isActive()) {
-                    broadcastIn = rc.readBroadcast(1);
-                    if (broadcastIn == rc.getRobot().getID()) {
-                        commandMode = rc.readBroadcast(2);
-                        rc.broadcast(1, 0);
-                        rc.broadcast(2, 0);
-                        System.out.println(commandMode);
-                    }
+        System.out.println(lifeTurn);
+        try {
+            if (rc.isActive()) {
+                broadcastIn = rc.readBroadcast(1);
+                if (broadcastIn == rc.getRobot().getID()) {
+                    commandMode = rc.readBroadcast(2);
+                    rc.broadcast(1, 0);
+                    rc.broadcast(2, 0);
+                    System.out.println(commandMode);
+                }
+                lifeTurn++;
+                if (lifeTurn == 2) {
+                    rc.broadcast(0, rc.getRobot().getID());
                     lifeTurn++;
-                    if (lifeTurn == 2) {
-                        rc.broadcast(0, rc.getRobot().getID());
-                        lifeTurn++;
-                    }
-                    //Execute unit-specific duties
-                    switch (commandMode) {
-                        //Default behavior
-                        case 0:
-                            while(true) {
-                                try {
-                                    if(rc.isActive()){
-                                        Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                                        if (nearbyEnemies.length > 0) {
-                                            rc.attackSquare(rc.senseRobotInfo(RobotPlayer.getBestTarget(nearbyEnemies, rc)).location);
-                                        } else {
-                                            Direction moveDirection = RobotPlayer.chooseDir(rc);
-                                            if (rc.canMove(moveDirection)) {
-                                                rc.move(moveDirection);
-                                            } else {
-                                                //Try a random direction
-                                                //TODO: try each dir
-                                                Direction randChoice = directions[rand.nextInt(8)];
+                }
+                rc.yield();
+                rc.yield();
+                //Execute unit-specific duties
+                switch (commandMode) {
+                    //Default behavior
+                    case 0:
+                        while(true) {
+                            try {
+                                if(rc.isActive()){
+                                    Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
+                                    if (nearbyEnemies.length > 0) {
+                                        rc.attackSquare(rc.senseRobotInfo(RobotPlayer.getBestTarget(nearbyEnemies, rc)).location);
+                                    } else {
+                                        Direction moveDirection = RobotPlayer.chooseDir(rc);
+                                        if (rc.canMove(moveDirection)) {
+                                            rc.move(moveDirection);
+                                        } else {/*
+                                                   No longer need such plebian local minima avoiders
+                                            Direction randChoice = directions[rand.nextInt(8)];
+                                            for (int i = 0; i < 8; i++) {
                                                 if (rc.canMove(randChoice)) {
                                                     rc.move(randChoice);
+                                                    break;
+                                                } else {
+                                                    randChoice.rotateRight();
                                                 }
-                                            }
+                                            }*/
                                         }
                                     }
-                                } catch(Exception e) {
-                                    System.err.println(e + " Soldier Exception");
                                 }
+                            } catch(Exception e) {
+                                System.err.println(e + " Soldier Exception");
                             }
+                            rc.yield();
+                        }
                         //PASTR cowgirl
-                        case 1:
-                            CowGirl.run(rc);  
-                            break;
+                    case 1:
+                        CowGirl.run(rc);  
+                        break;
                         //Noisetower cowboy
-                        case 2:
-                            CowBoy.run(rc); 
-                            break;
+                    case 2:
+                        CowBoy.run(rc); 
+                        break;
                         // pirate #1 - furthest corner from enemy
-                        case 3:
-                            Pirate.run(rc);
-                            break;
+                    case 3:
+                        Pirate.run(rc);
+                        break;
                         // pirate #2 - 2nd furthest corner from enemy
-                        case 4:
-                            Pirate.run(rc);
-                            break;
-                    }
+                    case 4:
+                        Pirate.run(rc);
+                        break;
                 }
-            } catch (Exception e) {
-                System.err.println(e.toString() + "Soldier Exception");
             }
-            rc.yield();
+        } catch (Exception e) {
+            System.err.println(e.toString() + "Soldier Exception");
+        }
+        rc.yield();
+        // returns corner locations in decending order of distance from enemy HQ
     }
-    // returns corner locations in decending order of distance from enemy HQ
 }
+

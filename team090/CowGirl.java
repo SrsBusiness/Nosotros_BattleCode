@@ -24,11 +24,14 @@ class CowGirl{
     static boolean patrolDir;
 
     static void run(RobotController rc){
+        System.out.println("Cowgirl here, Howdy.");
         while(true){
             if(rc.isActive()){
                 try {
                     if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 0) {
                         rc.move(Direction.WEST);
+                    } else if (rc.canMove(Direction.SOUTH) && (rc.getLocation().y+8)%8 != 0) {
+                        rc.move(Direction.SOUTH);
                     } else {
                         rc.construct(RobotType.PASTR);
                     }

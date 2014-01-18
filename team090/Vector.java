@@ -17,7 +17,7 @@ public class Vector {
     public Vector(double xGiven, double yGiven) {
         x = xGiven;
         y = yGiven;
-        magnitudeSq = Math.pow(x, 2) + Math.pow(y, 2);
+        magnitudeSq = x*x + y*y;
     }
 
     public double getX() {
@@ -49,44 +49,34 @@ public class Vector {
         magnitudeSq = x*x + y*y;
     }
 
-    public void add(double x1, double y1) {
-        x += x1;
-        y += y1;
-        magnitudeSq = x*x + y*y;
+    //Transforms
+    public Vector add(double x1, double y1) {
+        return new Vector(x+x1, y+y1);
     }
-
-    public void add(Vector v) {
-        x += v.getX();
-        y += v.getY();
-        magnitudeSq = x*x + y*y;
+    public Vector add(Vector v) {
+        return new Vector(x+v.getX(), y+v.getY());
     }
-
-    public void scale(double s) {
-        x *= s;
-        y *= s;
-        magnitudeSq = x*x + y*y;
+    public Vector scale(double s) {
+        return new Vector(x*s, y*s);
     }
-
-    public void applyPolynomial(double c0, double c1,
-                                double c2, double c3,
-                                double c4, double c5,
-                                double c6, double c7,
-                                double c8) {
+    public Vector poly(double c0, double c1,
+                       double c2, double c3,
+                       double c4, double c5,
+                       double c6, double c7,
+                       double c8) {
         double r = getMagnitude();
-        scale(c0*(r-c1)*(r-c1)+c2*(r-c3)+c4/(r-c5)+c6/((r-c7)*(r-c7))+c8);
+        return scale(c0*(r-c1)*(r-c1)+c2*(r-c3)+c4/(r-c5)+c6/((r-c7)*(r-c7))+c8);
     }
-    
-    public void applyLog(double root, double amplitude) {
+    public Vector log(double root, double amplitude) {
         double r = getMagnitude();
         if (r-(root-1) > 0) {
-            scale(Math.E*amplitude*Math.log(r-(root-1))/(r-(root-1)));
+            return scale(Math.E*amplitude*Math.log(r-(root-1))/(r-(root-1)));
         } else {
-            scale(0);
+            return scale(0);
         }
     }
-    
-    public void applyLogistic(double root, double amplitude) {
-        scale(amplitude*2/(1+(Math.pow(Math.E, (root-Math.pow(magnitudeSq, 0.5))))) - amplitude);
+    public Vector logistic(double root, double amplitude, double yShift) {
+        return scale(amplitude*2/(1+(Math.pow(Math.E, (root-Math.pow(magnitudeSq, 0.5))))) - amplitude + yShift);
     }
     
     //Return battlecode direction

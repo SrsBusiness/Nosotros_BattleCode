@@ -14,23 +14,24 @@ public class RobotPlayer {
         return force;
     }
 
-    public static Direction chooseDir(RobotController rc) throws Exception{
-        //TODO: pheremone trail
+    public static Direction chooseDir(RobotController rc,
+                                      Queue<MapLocation> pheromoneTrail) throws Exception {
         //TODO: fill in terrain to prevent getting stuck.
         //Use potential fields to judge next position.
         int mode = 0; //Different modes have different parameters
-        Vector bestDir = new Vector(0.0, 0.0);
+        Vector bestDir = new Vector();
 
         Team myTeam = rc.getTeam();
         MapLocation myLoc = rc.getLocation();
         MapLocation allyHQLoc = rc.senseHQLocation();
         MapLocation enemyHQLoc = rc.senseEnemyHQLocation();
 
-        Vector enemyHQForce = new Vector(0.0, 0.0);
-        Vector allyHQForce = new Vector(0.0, 0.0);
-        Vector enemyForce = new Vector(0.0, 0.0);
-        Vector allyForce = new Vector(0.0, 0.0);
-        Vector fearForce = new Vector(0.0, 0.0);
+        Vector pheremoneForce = new Vector();
+        Vector enemyHQForce = new Vector();
+        Vector allyHQForce = new Vector();
+        Vector enemyForce = new Vector();
+        Vector allyForce = new Vector();
+        Vector fearForce = new Vector();
     
         //TODO: bytecode optimize this
         Robot[] allyRobots = rc.senseNearbyGameObjects(Robot.class, 35, myTeam);
@@ -45,16 +46,17 @@ public class RobotPlayer {
             case 0:
                 enemyHQForce = getForceVector(myLoc, enemyHQLoc);
                 allyHQForce = getForceVector(myLoc, allyHQLoc);
+                //TODO: put backing off somewhere else, in another case.
                 fearForce = allyHQForce.getUnitVector(); 
-
-                if (allyRobots.length != 0) {
+    
+                if (allyRobots.length > 0) {
                     count = 0;
                     for (Robot r: allyRobots) {
                         RobotInfo info = rc.senseRobotInfo(r);
                         switch (info.type) {
                             case SOLDIER: 
                                 count++;
-                                allyForce.add(getForceVector(myLoc, info.location));
+                                allyForce = allyForce.add(getForceVector(myLoc, info.location));
                                 break;
                             case PASTR:
                                 break;
@@ -63,10 +65,10 @@ public class RobotPlayer {
                         }
                     }
                     if (count > 0) {
-                        allyForce.scale(1.0/count);
+                        allyForce = allyForce.scale(1.0/count);
                     }
                 }
-                if (enemyRobots.length != 0) {
+                if (enemyRobots.length > 0) {
                     count = 0;
                     for (Robot r: enemyRobots) {
                         //TODO: add different mode responses and aggression parameter.
@@ -74,44 +76,43 @@ public class RobotPlayer {
                         switch (info.type) {
                             case SOLDIER: 
                                 count++;
-                                enemyForce.add(getForceVector(myLoc, info.location));
+                                enemyForce = enemyForce.add(getForceVector(myLoc, info.location));
                                 break;
                             case PASTR: 
-                                enemyForce.add(getForceVector(myLoc, info.location));
+                                count++;
+                                enemyForce = enemyForce.add(getForceVector(myLoc, info.location));
                                 break;
                         }
                     }
                     if (count > 0) {
-                        enemyForce.scale(1.0/count);
+                        enemyForce = enemyForce.scale(1.0/count);
                     }
                 }
+                //Calculate pheremone forces
+                /*
+                for (Object p: pheromoneTrail.toArray()) {
+                    pheremoneForce = pheremoneForce.add(getForceVector(myLoc, (MapLocation)p));
+                }
+                if (pheromoneTrail.size() > 0) {
+                    pheremoneForce = pheremoneForce.scale(1.0/pheromoneTrail.size());
+                }*/
                 break;
             case 1:
                 break;
         }
-        enemyHQForce.applyLog(3.9+1, 6);
-        bestDir.add(enemyHQForce);
+        bestDir = enemyHQForce.log(3.9+1.2, 6);
         
-        //allyHQForce.applyPolynomial(0, 0,
-        //                            0, 0,
-        //                            2, 0,
-        //                            0, 0,
-        //                            -1);
-        //bestDir.add(allyHQForce);
-        
-        //bestDir.add(enemyForce);
-
-        if (rc.getHealth() < 40) {
-            fearForce.scale(16);
-            return fearForce.toDirectionEnum();
-            //bestDir.add(fearForce);
-            //allyForce.applyPolynomial(0,0,0,0,-12,0,0,0,0);
+        if (rc.getHealth() < 50 || allyRobots.length < 3) {
+            bestDir = bestDir.add(allyHQForce.logistic(4, (130-rc.getHealth()), 0));
+            if (enemyRobots.length > 0) {
+                bestDir = bestDir.add(enemyForce.poly(0,0,0,0,-80,0,0,0,-1));
+            }
+            //bestDir = bestDir.add(fearForce.scale(12));
+            //allyForce = allyForce.poly(0,0,0,0,-12,0,0,0,0);
         } else {
-            allyForce.applyLog(2.8, 2);
+            bestDir = bestDir.add(enemyForce.log(2, 3));
         }
-        bestDir.add(allyForce);
-
-
+        bestDir = bestDir.add(allyForce.log(2.6, 4));
         return bestDir.toDirectionEnum();
     }
 

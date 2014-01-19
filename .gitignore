@@ -1,3 +1,4 @@
+new
 *.class
 
 # Package Files #
@@ -7,3 +8,7 @@
 
 # Vim temp files
 *.sw*
+
+# Hidden files
+.*
+

@@ -6,7 +6,7 @@ import battlecode.common.RobotType;
 import battlecode.common.*;
 import java.util.*;
 
-class NoiseTower{
+class NoiseTower extends Role{
     static Direction[] directions = {
         Direction.NORTH, 
         Direction.NORTH_EAST, 
@@ -18,7 +18,7 @@ class NoiseTower{
         Direction.NORTH_WEST };
     static MapLocation target;
  
-    static void run(RobotController rc){
+    void execute(){
         target = rc.getLocation();
         target.add(6,0);
         while(true){

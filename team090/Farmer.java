@@ -1,4 +1,3 @@
-
 package team090;
 import battlecode.common.Direction;
 import battlecode.common.GameConstants;
@@ -7,8 +6,8 @@ import battlecode.common.RobotType;
 import battlecode.common.*;
 import java.util.*;
 
-class CowBoy{
-    static Direction[] directions = {
+class Farmer extends Role{
+    Direction[] directions = {
         Direction.NORTH, 
         Direction.NORTH_EAST, 
         Direction.EAST, 
@@ -17,24 +16,30 @@ class CowBoy{
         Direction.SOUTH_WEST, 
         Direction.WEST, 
         Direction.NORTH_WEST };
-    static Random rand;
-    static int lifeTurn = 0;
-    static int broadcastIn;
-    static int commandMode;
+    Random rand;
+    int lifeTurn = 0;
+    int broadcastIn;
+    int commandMode;
     // true = down, false = up
-    static boolean patrolDir;
+    boolean patrolDir;
 
-    static void run(RobotController rc){
+    void execute(){
+    }
+
+    void run(RobotController rc){
+        System.out.println("Cowgirl here, Howdy.");
         while(true){
             if(rc.isActive()){
                 try {
-                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {
+                    if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 0) {
                         rc.move(Direction.WEST);
+                    } else if (rc.canMove(Direction.SOUTH) && (rc.getLocation().y+8)%8 != 0) {
+                        rc.move(Direction.SOUTH);
                     } else {
-                        rc.construct(RobotType.NOISETOWER);
+                        rc.construct(RobotType.PASTR);
                     }
                 } catch(Exception e) {
-                    System.err.println(e + " CowBoy Exception");
+                    System.err.println(e + " CowGirl Exception");
                 }
             }
         }

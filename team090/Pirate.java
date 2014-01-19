@@ -6,8 +6,8 @@ import battlecode.common.RobotType;
 import battlecode.common.*;
 import java.util.*;
 
-class Pirate{
-    static Direction[] directions = {
+class Pirate extends Role{
+    Direction[] directions = {
         Direction.NORTH, 
         Direction.NORTH_EAST, 
         Direction.EAST, 
@@ -16,21 +16,25 @@ class Pirate{
         Direction.SOUTH_WEST, 
         Direction.WEST, 
         Direction.NORTH_WEST };
-    static Random rand;
-    static int lifeTurn = 0;
-    static int broadcastIn;
-    static int commandMode;
+    Random rand;
+    int lifeTurn = 0;
+    int broadcastIn;
+    int commandMode;
     // true = down, false = up
-    static boolean patrolDir;
-    static int width, height;
-    static void run(RobotController rc){
+    boolean patrolDir;
+    int width, height;
+    
+    void execute(){
+    }
+
+    void run(RobotController rc){
         width = rc.getMapWidth();
         height = rc.getMapHeight();
         while(true){ 
             rc.yield();
         }
     }
-    static MapLocation[] corners(final RobotController rc){
+    MapLocation[] corners(final RobotController rc){
         class LocComparator implements Comparator<MapLocation>{
             public int compare(MapLocation l1, MapLocation l2){
                 MapLocation enemy = rc.senseEnemyHQLocation();
@@ -44,7 +48,7 @@ class Pirate{
         Arrays.sort(result, new LocComparator());
         return result;
     }
-    static void moveToCorner(RobotController rc, MapLocation corner){
+    void moveToCorner(RobotController rc, MapLocation corner){
         while(!rc.getLocation().equals(corner)){
             try {
                 if(rc.isActive())

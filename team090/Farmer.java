@@ -8,13 +8,18 @@ import java.util.*;
 
 class Farmer extends Role{
 
+    Farmer(RobotController rc){
+        super(rc);
+    }
     void execute(){
         try {
             //Go to the designated PASTR location.
             //Select a target on the first turn
+            /*
             if (lifeTurn++ == 2) {
-                target = nul;
+                target = null;
             }
+            */
             //If the target is not null, go to it.
             if (rc.getLocation().equals(target)) {
                 //Construct the PASTR when the location matches.

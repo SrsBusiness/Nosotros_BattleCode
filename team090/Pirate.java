@@ -17,8 +17,6 @@ class Pirate extends Role{
     Pirate(RobotController rc, int mode){
         super(rc);
         while(!rc.isActive());
-        xDir = Direction.EAST;
-        yDir = Direction.NORTH;
         MapLocation[] corners = corners(rc);
         corner = corners[mode];
         height = rc.getMapHeight();
@@ -28,7 +26,7 @@ class Pirate extends Role{
     void execute(){
         if(!found){
             if(!atCorner)
-                moveToCorner();
+                moveToCorner(rc, corner);
             else{
                 patrol();
             }
@@ -58,13 +56,17 @@ class Pirate extends Role{
         }
     }
     void patrol(){
-        MapLocation current = rc.getLocation();
-        if(current.y == 0 && yDir || current.y == height - 1 && !yDir){
-            yDir = !yDir;
-            if(current.x == 0 && xDir || current.x == width - 1 && !xDir)
-                xDir = !xDir;
-            rc.move(xDir ? Direction.WEST : Direction.EAST);
+        try{
+            MapLocation current = rc.getLocation();
+            if(current.y == 0 && yDir || current.y == height - 1 && !yDir){
+                yDir = !yDir;
+                if(current.x == 0 && xDir || current.x == width - 1 && !xDir)
+                    xDir = !xDir;
+                rc.move(xDir ? Direction.WEST : Direction.EAST);
+            }
+            rc.move(yDir ? Direction.NORTH : Direction.SOUTH);
+        }catch(Exception e){
+            System.err.println(e + " Pirate Exception");
         }
-        rc.move(yDir ? Direction.NORTH : Direction.SOUTH);
     }
 }

@@ -9,6 +9,10 @@ import java.util.*;
 class CattleDriver extends Role {
     int lifeTurn = 0;
     int commandMode;
+    
+    CattleDriver(RobotController rc){
+        super(rc);
+    }
 
     void execute() {
         try {

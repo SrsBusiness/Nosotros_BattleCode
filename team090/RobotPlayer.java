@@ -16,27 +16,27 @@ public class RobotPlayer {
    private static void setCurrentRole(RobotType type, int mode) {
         switch (type) {
             case HQ:
-                currentRole = new HQ();
+                currentRole = new HQ(rc);
                 break;
             case SOLDIER:
                 switch (mode) {
                     case 0:
-                        currentRole = new Infantry();
+                        currentRole = new Infantry(rc);
                         break;
                     case 1:
-                        currentRole = new Farmer();
+                        currentRole = new Farmer(rc);
                         break;
                     case 2:
-                        currentRole = new CattleDriver();
+                        currentRole = new CattleDriver(rc);
                         break;
-                    case 3:
-                        currentRole = new Pirate();
+                    case 3: case 4:
+                        currentRole = new Pirate(rc, mode - 3);
                         break;
 
                 }
                 break;
             case NOISETOWER:
-                currentRole = new NoiseTower();
+                currentRole = new NoiseTower(rc);
                 break;
             case PASTR:
                 //currentRole = new Pastr();

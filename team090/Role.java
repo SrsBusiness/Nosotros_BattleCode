@@ -31,6 +31,10 @@ abstract class Role{
 
     abstract void execute(); // overwrite
 
+    Role(RobotController rc){
+        this.rc = rc;
+    }
+
     static Vector getForceVector(MapLocation src, MapLocation dst) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
         double r = Math.pow(force.getMagnitudeSq(), 0.5);

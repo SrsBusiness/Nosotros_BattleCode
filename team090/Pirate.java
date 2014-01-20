@@ -8,21 +8,32 @@ import java.util.*;
 
 class Pirate extends Role{
     boolean patrolDir;
-    MapLocation corner; 
+    MapLocation corner;
+    MapLocation pastr;
     boolean atCorner;
-    Direction xDir, yDir;
+    boolean found;
+    boolean xDir, yDir;
+    int height, width;
     Pirate(RobotController rc, int mode){
         super(rc);
         while(!rc.isActive());
+        xDir = Direction.EAST;
+        yDir = Direction.NORTH;
         MapLocation[] corners = corners(rc);
         corner = corners[mode];
+        height = rc.getMapHeight();
+        width = rc.getMapWidth();
     }
 
     void execute(){
-        if(!atCorner)
-            moveToCorner();
-        else{
-            patrol();
+        if(!found){
+            if(!atCorner)
+                moveToCorner();
+            else{
+                patrol();
+            }
+        }else{
+            ; 
         }
     }
     MapLocation[] corners(final RobotController rc){
@@ -47,6 +58,13 @@ class Pirate extends Role{
         }
     }
     void patrol(){
-           
+        MapLocation current = rc.getLocation();
+        if(current.y == 0 && yDir || current.y == height - 1 && !yDir){
+            yDir = !yDir;
+            if(current.x == 0 && xDir || current.x == width - 1 && !xDir)
+                xDir = !xDir;
+            rc.move(xDir ? Direction.WEST : Direction.EAST);
+        }
+        rc.move(yDir ? Direction.NORTH : Direction.SOUTH);
     }
 }

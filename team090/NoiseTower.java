@@ -6,28 +6,18 @@ import battlecode.common.RobotType;
 import battlecode.common.*;
 import java.util.*;
 
-class NoiseTower extends Role{
-    static Direction[] directions = {
-        Direction.NORTH, 
-        Direction.NORTH_EAST, 
-        Direction.EAST, 
-        Direction.SOUTH_EAST, 
-        Direction.SOUTH, 
-        Direction.SOUTH_WEST, 
-        Direction.WEST, 
-        Direction.NORTH_WEST };
-    static MapLocation target;
- 
-    void execute(){
-        target = rc.getLocation();
-        target.add(6,0);
-        while(true){
-            try {
-                rc.attackSquareLight(target);
-            } catch (Exception e) {
-                System.err.println(e.toString() + "Noisetower Exception");
+class NoiseTower extends Role {
+    void execute() {
+        try {
+            //If first turn, set target
+            if (lifeTurn++ == 2) {
+                target = rc.getLocation();
+                target.add(6,0);
             }
-            rc.yield();
+            rc.attackSquareLight(target);
+        } catch (Exception e) {
+            System.err.println(e.toString() + "Noisetower Exception");
         }
+        rc.yield();
     }
 }

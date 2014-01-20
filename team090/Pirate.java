@@ -7,31 +7,13 @@ import battlecode.common.*;
 import java.util.*;
 
 class Pirate extends Role{
-    Direction[] directions = {
-        Direction.NORTH, 
-        Direction.NORTH_EAST, 
-        Direction.EAST, 
-        Direction.SOUTH_EAST, 
-        Direction.SOUTH, 
-        Direction.SOUTH_WEST, 
-        Direction.WEST, 
-        Direction.NORTH_WEST };
-    Random rand;
-    int lifeTurn = 0;
-    int broadcastIn;
-    int commandMode;
-    // true = down, false = up
     boolean patrolDir;
-    int width, height;
     
-    void execute(){
-    }
 
-    void run(RobotController rc){
-        width = rc.getMapWidth();
-        height = rc.getMapHeight();
-        while(true){ 
-            rc.yield();
+    void execute(){
+        //Set values 
+        if (lifeTurn == 2) {
+            
         }
     }
     MapLocation[] corners(final RobotController rc){

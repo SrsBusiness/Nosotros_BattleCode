@@ -8,7 +8,7 @@ import java.util.*;
 
 class Infantry extends Role{
     
-    Infantry(RobotController rc){
+    Infantry(RobotController rc) {
         super(rc);
     }
 

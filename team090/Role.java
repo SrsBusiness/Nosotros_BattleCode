@@ -20,11 +20,12 @@ abstract class Role{
 
     Random rand;
     RobotController rc;
+    int mapWidth; 
+    int mapHeight;     
     double aggression;
 
     MapLocation myLocation;
     MapLocation enemyHQLocation;
-    Direction enemyDir;
     MapLocation target = null;
 
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
@@ -33,6 +34,9 @@ abstract class Role{
 
     Role(RobotController rc){
         this.rc = rc;
+        mapWidth = rc.getMapWidth();
+        mapHeight = rc.getMapHeight();
+        enemyHQLocation = rc.senseEnemyHQLocation();
     }
 
     static Vector getForceVector(MapLocation src, MapLocation dst) {

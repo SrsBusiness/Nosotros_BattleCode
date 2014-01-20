@@ -8,9 +8,10 @@ import java.util.*;
 
 class Farmer extends Role{
 
-    Farmer(RobotController rc){
+    Farmer(RobotController rc) {
         super(rc);
     }
+
     void execute(){
         try {
             //Go to the designated PASTR location.

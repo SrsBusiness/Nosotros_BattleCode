@@ -11,7 +11,6 @@ public class RobotPlayer {
     static RobotType myType;
     static Role currentRole;
     static int lifeTurn = 0;
-    static int mapWidth, mapHeight;
 
     private static void setCurrentRole(RobotController rc, RobotType type, int mode) {
         switch (type) {
@@ -47,11 +46,10 @@ public class RobotPlayer {
     public static void run(RobotController rc) {
         //Initialize Role
         myType = rc.getType();
-        mapWidth = rc.getMapWidth();
-        mapHeight = rc.getMapHeight();
-        setCurrentRole(rc, myType, 0);
+        if(rc!=null)
+            setCurrentRole(rc, myType, 0);
         while(true) {
-            try{
+            try {
                 int newMode = 0;
                 //Have soldiers poll for commands from the HQ
                 if (myType == RobotType.SOLDIER && rc.readBroadcast(1) == rc.getRobot().getID()) {
@@ -67,13 +65,13 @@ public class RobotPlayer {
                 if (mode != newMode) {
                     setCurrentRole(rc, rc.getType(), newMode);
                 }
-                if(rc.isActive()) {
-                    currentRole.execute();
-                }
-                rc.yield();
-            }catch(Exception e){
+            } catch (Exception e) {
                 System.err.println(e + " RobotPlayer Exception");
             }
+            if(rc.isActive()) {
+                currentRole.execute();
+            }
+            rc.yield();
         }
     }
 }

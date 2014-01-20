@@ -11,10 +11,12 @@ class HQ extends Role{
     int farmer;
     int noisetowerMaker;
     int[] pirates = new int[2];
+    Direction enemyDir;
     int broadcastIn;
 
     HQ(RobotController rc){
         super(rc);
+        enemyDir = rc.getLocation().directionTo(enemyHQLocation);
     }
 
     MapLocation selectFarmLocation() {
@@ -63,7 +65,8 @@ class HQ extends Role{
                 rc.attackSquare(rc.senseRobotInfo(getBestTarget(nearbyEnemies, rc)).location);
             }
         } catch (Exception e) {
-            System.err.println(e.toString() + "HQ Exception");
+            System.err.println(e.toString() + " HQ Exception\n");
+            e.printStackTrace();
         }
     }
 }

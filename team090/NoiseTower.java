@@ -7,8 +7,7 @@ import battlecode.common.*;
 import java.util.*;
 
 class NoiseTower extends Role {
-    
-    NoiseTower(RobotController rc){
+    NoiseTower(RobotController rc) {
         super(rc);
     }
 

@@ -10,6 +10,10 @@ class CattleDriver extends Role {
     int lifeTurn = 0;
     int commandMode;
 
+    CattleDriver(RobotController rc) {
+        super(rc);
+    }
+
     void execute() {
         try {
             if (rc.canMove(Direction.WEST) && (rc.getLocation().x+8)%8 != 1) {

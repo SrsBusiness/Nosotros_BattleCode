@@ -20,6 +20,10 @@ abstract class Role{
 
     Random rand;
     RobotController rc;
+
+    int mapWidth = rc.getMapWidth();
+    int mapHeight = rc.getMapHeight();
+ 
     double aggression;
 
     MapLocation myLocation;

@@ -20,7 +20,7 @@ class Pirate extends Role{
 
     void execute(){
         if(!atCorner)
-            moveToCorner();
+            moveToCorner(rc, corner);
         else{
             patrol();
         }
@@ -33,9 +33,9 @@ class Pirate extends Role{
             }
         }
         MapLocation[] result = new MapLocation[]{new MapLocation(3, 3), 
-            new MapLocation(3, height - 4), 
-            new MapLocation(width - 4, 3), 
-            new MapLocation(width - 4, height - 4)};
+            new MapLocation(3, mapHeight - 4), 
+            new MapLocation(mapWidth - 4, 3), 
+            new MapLocation(mapWidth - 4, mapHeight - 4)};
         Arrays.sort(result, new LocComparator());
         return result;
     }

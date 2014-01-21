@@ -7,6 +7,10 @@ import battlecode.common.*;
 import java.util.*;
 
 class Infantry extends Role{
+    Infantry(RobotController rc) {
+        super(rc);
+    }
+
     void execute(){
         try {
             if(rc.isActive()){

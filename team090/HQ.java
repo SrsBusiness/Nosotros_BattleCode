@@ -13,6 +13,10 @@ class HQ extends Role{
     int[] pirates = new int[2];
     int broadcastIn;
 
+    public HQ(RobotController rc) {
+        super(rc);
+    }
+
     MapLocation selectFarmLocation() {
         return rc.getLocation().subtract(enemyDir);
     }

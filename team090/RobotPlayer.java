@@ -11,9 +11,8 @@ public class RobotPlayer {
     static RobotType myType;
     static Role currentRole;
     static int lifeTurn = 0;
-    static int mapWidth, mapHeight;
 
-   private static void setCurrentRole(RobotType type, int mode) {
+   private static void setCurrentRole(RobotController rc, RobotType type, int mode) {
         switch (type) {
             case HQ:
                 currentRole = new HQ(rc);
@@ -47,24 +46,26 @@ public class RobotPlayer {
     public static void run(RobotController rc) {
         //Initialize Role
         myType = rc.getType();
-        mapWidth = rc.getMapWidth();
-        mapHeight = rc.getMapHeight();
-        setCurrentRole(myType, 0);
+        setCurrentRole(rc, myType, 0);
         while(true) {
-            int newMode = 0;
-            //Have soldiers poll for commands from the HQ
-            if (myType == RobotType.SOLDIER && rc.readBroadcast(1) == rc.getRobot().getID()) {
-                newMode = rc.readBroadcast(2);
-                // Probably unnessesary clearing of channels
-                rc.broadcast(1, 0); 
-                rc.broadcast(2, 0);
-            }
-            //Broadcast SOLDIER ID when spawned, if Soldier type.
-            if (++lifeTurn == 2 && myType == RobotType.SOLDIER) {
-                rc.broadcast(0, rc.getRobot().getID());
-            }
-            if (mode != newMode) {
-                setCurrentRole(rc.getType(), newMode);
+            try {
+                int newMode = 0;
+                //Have soldiers poll for commands from the HQ
+                if (myType == RobotType.SOLDIER && rc.readBroadcast(1) == rc.getRobot().getID()) {
+                    newMode = rc.readBroadcast(2);
+                    // Probably unnessesary clearing of channels
+                    rc.broadcast(1, 0); 
+                    rc.broadcast(2, 0);
+                }
+                //Broadcast SOLDIER ID when spawned, if Soldier type.
+                if (++lifeTurn == 2 && myType == RobotType.SOLDIER) {
+                    rc.broadcast(0, rc.getRobot().getID());
+                }
+                if (mode != newMode) {
+                    setCurrentRole(rc, rc.getType(), newMode);
+                }
+            } catch (Exception e) {
+                System.err.println(e + " RobotPlayer Exception");
             }
             if(rc.isActive()) {
                 currentRole.execute();

@@ -11,12 +11,14 @@ class HQ extends Role{
     int farmer;
     int noisetowerMaker;
     int[] pirates = new int[2];
+    MapLocation myLocation;
     Direction enemyDir;
     int broadcastIn;
 
     HQ(RobotController rc){
         super(rc);
-        enemyDir = rc.getLocation().directionTo(enemyHQLocation);
+        myLocation = rc.getLocation();
+        enemyDir = myLocation.directionTo(enemyHQLocation);
     }
 
     MapLocation selectFarmLocation() {
@@ -57,6 +59,11 @@ class HQ extends Role{
                 rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
                 if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
                     rc.spawn(enemyDir);
+                } else {
+                    Direction availDir = getNextAdjacentEmptyLocation(myLocation, enemyDir);
+                    if (availDir != Direction.NONE) {
+                        rc.spawn(availDir);
+                    }
                 }
             }
             //Attack nearby enemies (range^2 = 15).

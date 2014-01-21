@@ -37,7 +37,7 @@ class Infantry extends Role{
                     }
                 }
 
-                myLocation = rc.getLocation();
+                MapLocation myLocation = rc.getLocation();
                 myTrail.offer(myLocation);
                 if (myTrail.size() > 9) {
                     myTrail.remove();

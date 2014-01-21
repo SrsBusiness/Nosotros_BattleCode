@@ -24,7 +24,6 @@ abstract class Role{
     int mapHeight;     
     double aggression;
 
-    MapLocation myLocation;
     MapLocation enemyHQLocation;
     MapLocation target = null;
 
@@ -39,12 +38,27 @@ abstract class Role{
         enemyHQLocation = rc.senseEnemyHQLocation();
     }
 
-    static Vector getForceVector(MapLocation src, MapLocation dst) {
+
+    Direction getNextAdjacentEmptyLocation(MapLocation myLocation, Direction initial) {
+        try {
+        //TODO: Figure out how to not bad (10)
+        for (int i = initial.ordinal(); i != initial.ordinal(); i=(i+1)%10) {
+            if(rc.senseObjectAtLocation(rc.getLocation().add(Direction.values()[i])) == null) {
+                return Direction.values()[i];
+            }
+        }
+        } catch (Exception e) {
+            System.err.println(e.toString() + " could not get adjacent empty location");
+            return Direction.NONE;
+        }
+        return Direction.NONE;
+    }
+    Vector getForceVector(MapLocation src, MapLocation dst) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
         double r = Math.pow(force.getMagnitudeSq(), 0.5);
         return force;
     }
-    static Direction chooseDir(RobotController rc,
+    Direction chooseDir(RobotController rc,
             Queue<MapLocation> pheromoneTrail) throws Exception {
         //TODO: fill in terrain to prevent getting stuck.
         //Use potential fields to judge next position.
@@ -145,7 +159,7 @@ abstract class Role{
         bestDir = bestDir.add(allyForce.log(2.6, 4));
         return bestDir.toDirectionEnum();
     } 
-    static Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
+    Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
         //Choose the best robot to attack. Prioritizes low HP units and SOLDIERS over PASTRS. Do not attack HQs (futile).
         double lowest = (double)Integer.MAX_VALUE;
         Robot weakest = null;

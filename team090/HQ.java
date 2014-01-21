@@ -42,9 +42,9 @@ class HQ extends Role{
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
             } else if (robotIDs.size() == 6 && noisetowerMaker == 0) {
-                noisetowerMaker = robotIDs.get(robotIDs.size()-1);
-                rc.broadcast(1, noisetowerMaker);
-                rc.broadcast(2, 2);
+                //noisetowerMaker = robotIDs.get(robotIDs.size()-1);
+                //rc.broadcast(1, noisetowerMaker);
+                //rc.broadcast(2, 2);
             } else if (robotIDs.size() == 14 && pirates[0] == 0) {
                 pirates[0] = robotIDs.get(robotIDs.size() - 1);
                 rc.broadcast(1, pirates[0]);

@@ -10,28 +10,41 @@ class Pirate extends Role{
     boolean patrolDir;
     MapLocation corner;
     MapLocation pastr;
-    boolean atCorner;
+    boolean atTarget;
     boolean found;
     boolean xDir, yDir;
     int height, width;
+    MapLocation myLocation;
+    MapLocation[] corners;
+    MapLocation nextWaypoint;
+
     Pirate(RobotController rc, int mode){
         super(rc);
         while(!rc.isActive());
-        MapLocation[] corners = corners(rc);
+        corners = corners(rc);
         corner = corners[mode];
         height = rc.getMapHeight();
         width = rc.getMapWidth();
+
+        nextWaypoint = corner;
     }
 
     void execute(){
-        if(!found){
-            if(!atCorner)
-                moveToCorner(rc, corner);
-            else{
-                patrol();
-            }
-        }else{
-            ; 
+        if (rc.isActive()) {
+            myLocation = rc.getLocation();
+            //if(!found){
+                if(!atTarget) {
+                    moveToLocation(rc, nextWaypoint);
+                    if (myLocation.equals(corner)) {
+                        atTarget = true;
+                    }
+                } else {
+                    atTarget = false;
+                    patrol();
+                }
+            //} else {
+            //    ; 
+            //}
         }
     }
     MapLocation[] corners(final RobotController rc){
@@ -46,17 +59,31 @@ class Pirate extends Role{
             new MapLocation(mapWidth - 4, 3), 
             new MapLocation(mapWidth - 4, mapHeight - 4)};
         Arrays.sort(result, new LocComparator());
+        for (MapLocation m : result) {
+            System.out.println(m);
+        }
         return result;
     }
-    void moveToCorner(RobotController rc, MapLocation corner){
+    void moveToLocation(RobotController rc, MapLocation location){
         try {
-            rc.move(rc.getLocation().directionTo(corner));
+            Direction moveDirection = myLocation.directionTo(location);
+            if (rc.canMove(moveDirection)) {
+                rc.move(moveDirection);
+            } else {
+                moveDirection = getNextAdjacentEmptyLocation(myLocation, moveDirection);
+                if (moveDirection != Direction.NONE) {
+                    rc.move(moveDirection);
+                }
+            }
         } catch(Exception e) {
             System.err.println(e + " Pirate Exception");
+            e.printStackTrace();
         }
     }
     void patrol(){
         try{
+            corner = corners[rand.nextInt(corners.length)];
+            /*
             MapLocation current = rc.getLocation();
             if(current.y == 0 && yDir || current.y == height - 1 && !yDir){
                 yDir = !yDir;
@@ -65,6 +92,7 @@ class Pirate extends Role{
                 rc.move(xDir ? Direction.WEST : Direction.EAST);
             }
             rc.move(yDir ? Direction.NORTH : Direction.SOUTH);
+            */
         }catch(Exception e){
             System.err.println(e + " Pirate Exception");
         }

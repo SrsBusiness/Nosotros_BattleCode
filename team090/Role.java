@@ -41,12 +41,15 @@ abstract class Role{
 
     Direction getNextAdjacentEmptyLocation(MapLocation myLocation, Direction initial) {
         try {
-        //TODO: Figure out how to not bad (10)
-        for (int i = initial.ordinal(); i != initial.ordinal(); i=(i+1)%10) {
-            if(rc.senseObjectAtLocation(rc.getLocation().add(Direction.values()[i])) == null) {
-                return Direction.values()[i];
+            //TODO: Figure out how to not bad (10)
+            for (Direction d : directions) {
+                if (d.equals(initial)) {
+                    continue;
+                }
+                if(rc.senseObjectAtLocation(myLocation.add(d)) == null) {
+                    return d;
+                }
             }
-        }
         } catch (Exception e) {
             System.err.println(e.toString() + " could not get adjacent empty location");
             return Direction.NONE;

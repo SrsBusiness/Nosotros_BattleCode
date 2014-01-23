@@ -137,7 +137,6 @@ abstract class Role{
                 nearbyEnemyCount++;
             }
         }
-        System.out.printf("%d vs %d\n", nearbyAllyCount, nearbyEnemyCount);
         if (nearbyAllyCount < nearbyEnemyCount) {
             return 1+nearbyEnemyCount-nearbyAllyCount;
         }

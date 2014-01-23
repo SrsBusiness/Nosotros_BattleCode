@@ -7,21 +7,24 @@ import battlecode.common.*;
 import java.util.*;
 
 class TowerBuilder extends Role{
+    MapLocation target;
 
-    TowerBuilder(RobotController rc) {
+    TowerBuilder(RobotController rc, MapLocation towerSpot) {
         super(rc);
+        target = towerSpot;
     }
 
     void execute(){
         try {
             //Go to the designated PASTR location.
             //If the target is not null, go to it.
-            //if (rc.getLocation().equals(target)) {
+            if (rc.getLocation().equals(target)) {
                 //Construct the PASTR when the location matches.
                 rc.construct(RobotType.NOISETOWER);
-            //} else {
-            //    //Go to the target.
-            //}
+            } else {
+                //Go to the target.
+                //moveTo(target);
+            }
         } catch(Exception e) {
             System.err.println(e + " TowerBuilder Exception");
         }

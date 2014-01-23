@@ -45,7 +45,13 @@ class HQ extends Role{
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
                 rc.broadcast(2, 5);
-            }// else if (robotIDs.size() == 14 && pirates[0] == 0) {
+                //Figure out a good spot to put the noise tower.
+                //somthing something
+                //Broadcast xy
+                rc.broadcast(3, 0);
+                rc.broadcast(4, 0);
+            }
+            // else if (robotIDs.size() == 14 && pirates[0] == 0) {
             //    pirates[0] = robotIDs.get(robotIDs.size() - 1);
             //    rc.broadcast(1, pirates[0]);
             //    rc.broadcast(2, 3);

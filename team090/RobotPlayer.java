@@ -62,12 +62,14 @@ public class RobotPlayer {
                     rc.broadcast(2, 0);
                 }
                 //Broadcast SOLDIER ID when spawned, if Soldier type.
-                if (++lifeTurn == 2 && myType == RobotType.SOLDIER) {
+                if (++lifeTurn == 1 && myType == RobotType.SOLDIER) {
                     rc.broadcast(0, rc.getRobot().getID());
                 }
+                //When a different mode is broadcasted, change accordingly.
                 if (mode != newMode) {
                     setCurrentRole(rc, rc.getType(), newMode);
                 }
+                //When the type changes, change the role accordingly.
                 if (myType != rc.getType()) {
                     setCurrentRole(rc, rc.getType(), newMode);
                 }

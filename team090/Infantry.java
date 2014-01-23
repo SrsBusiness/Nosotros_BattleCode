@@ -14,53 +14,40 @@ class Infantry extends Role{
 
     void execute(){
         try {
-            if(rc.isActive()){
-                Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam().opponent());
-                Robot[] nearbyAllies = rc.senseNearbyGameObjects(Robot.class, 10, rc.getTeam());
+            if(rc.isActive()) {
+                Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class);
+                ArrayList<RobotInfo> allyRobotInfo = new ArrayList<RobotInfo>();
+                ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
+                //Populate the knowledge of all nearby robots.
+                RobotInfo info;
+                for (Robot r: nearbyRobots) {
+                    info = rc.senseRobotInfo(r);
+                    if (info.team == myTeam) {
+                        allyRobotInfo.add(info);
+                    } else if (info.team == notMyTeam) {
+                        enemyRobotInfo.add(info);
+                    }
+                }
                 //TODO: Caluculate individual aggression.
-                //TODO: Fix redundant scans
-                if ((rc.senseNearbyGameObjects(Robot.class, 36, rc.getTeam().opponent()).length >=
-                            rc.senseNearbyGameObjects(Robot.class, 36, rc.getTeam()).length &&
-                            rc.getHealth() < 50) ||
-                        rc.getHealth() < 30) {
+                if ((enemyRobotInfo.size() >= allyRobotInfo.size() &&
+                     rc.getHealth() < 60) ||
+                    rc.getHealth() < 30) {
                     aggression = 0;
                 } else {
                     aggression = 1;
                 }
-                if (nearbyEnemies.length > 0 && aggression > 0) {
-                    Robot bestTarget = getBestTarget(nearbyEnemies, rc);
-                    if (bestTarget != null) {
-                        RobotInfo targetInfo = rc.senseRobotInfo(bestTarget);
-                        rc.attackSquare(targetInfo.location);
-                        rc.yield();
+                //Attacking, selecting the enemy with the lowest health.
+                if (enemyRobotInfo.size() > 0 && aggression > 0) {
+                    RobotInfo attackTarget = getWeakestTargetInRange(enemyRobotInfo);
+                    if (attackTarget != null) {
+                        rc.attackSquare(attackTarget.location);
                         return;
                     }
                 }
-
+                //Set current location
                 MapLocation myLocation = rc.getLocation();
-                myTrail.offer(myLocation);
-                if (myTrail.size() > 9) {
-                    myTrail.remove();
-                }
-
-                Direction moveDirection = chooseDirection(myLocation, rc.senseNearbyGameObjects(Robot.class), 0);
-                if (rc.canMove(moveDirection)) {
-                    rc.move(moveDirection);
-                } else {
-                    rc.yield();
-                    return;
-                    /*
-                       No longer need such plebian local minima avoiders
-                       Direction randChoice = directions[rand.nextInt(8)];
-                       for (int i = 0; i < 8; i++) {
-                       if (rc.canMove(randChoice)) {
-                       rc.move(randChoice);
-                       break;
-                       } else {
-                       randChoice.rotateRight();
-                       }
-                       }*/
-                }
+                
+                tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 0);
             }
         } catch(Exception e) {
             System.err.println(e + " Infantry Exception");

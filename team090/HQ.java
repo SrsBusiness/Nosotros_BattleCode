@@ -66,10 +66,16 @@ class HQ extends Role{
                     }
                 }
             }
+
+            Robot[] nearbyEnemyRobots = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
+            ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
+            //Populate the knowledge of nearby enemy robots.
+            for (Robot r: nearbyEnemyRobots) {
+                enemyRobotInfo.add(rc.senseRobotInfo(r));
+            }
             //Attack nearby enemies (range^2 = 15).
-            Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
-            if(nearbyEnemies.length > 0) {
-                rc.attackSquare(rc.senseRobotInfo(getBestTarget(nearbyEnemies, rc)).location);
+            if(nearbyEnemyRobots.length > 0) {
+                rc.attackSquare(getWeakestTargetInRange(enemyRobotInfo).location);
             }
         } catch (Exception e) {
             System.err.println(e.toString() + " HQ Exception\n");

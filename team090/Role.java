@@ -64,35 +64,48 @@ abstract class Role{
         }
         return Direction.NONE;
     }
-
+    
     //TODO: fill in terrain to prevent getting stuck.
-    //senseNearbyGameObjects(Robot.class)
-    Direction chooseDirection(MapLocation src, Robot[] surroundingRobots, int mode) throws Exception {
-        ArrayList<RobotInfo> allyRobots = new ArrayList<RobotInfo>();
-        ArrayList<RobotInfo> enemyRobots = new ArrayList<RobotInfo>();
+    void tryToWalk(MapLocation src,
+                   ArrayList<RobotInfo> allyRobotInfo,
+                   ArrayList<RobotInfo> enemyRobotInfo,
+                   int mode) throws Exception {
         Vector North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest;
         boolean isOnPheromone = false;
-        RobotInfo info;
-        //Separate the robots into enemy and allied.
-        for (Robot r: surroundingRobots) {
-            info = rc.senseRobotInfo(r);
-            if (info.team == myTeam) {
-                allyRobots.add(info);
-            } else if (info.team == notMyTeam) {
-                enemyRobots.add(info);
-            }
-        }
+        Direction desiredDirection;
+
         //Calculate pheromone forces
-        for (Object p: myTrail.toArray()) {
-            if (src.equals((MapLocation)p)) {
+        for (MapLocation p: myTrail) {
+            if (src.equals(p)) {
                 isOnPheromone = true;
             }
         }
+        
         if (isOnPheromone) {
             //Calculate min-force obstacle pathfinding.
-            return Direction.NONE;
-        } else {    
-            return netForceAt(src, allyRobots, enemyRobots, mode).toDirectionEnum();
+            desiredDirection = Direction.NONE;
+        } else {
+            //Unobstructed walking
+            desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
+        }
+        if (rc.canMove(desiredDirection)) {
+            rc.move(desiredDirection);
+        } else {
+            //Choose the next available location to escape the local minima.
+            //If in charge mode, don't accidentally get too close.
+            //TODO: debate the validity of this conditional.
+            if (mode != 0) {
+                desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
+                if (desiredDirection != Direction.NONE) {
+                    rc.move(desiredDirection);
+                }
+            }
+        }
+        //Lay down pheromone trail.
+        myTrail.offer(src);
+        //GA TODO: parameterize the trail size.
+        if (myTrail.size() > 9) {
+            myTrail.remove();
         }
     }
     //TODO: bytecode optimize this call so that
@@ -227,20 +240,30 @@ abstract class Role{
             e.printStackTrace();
         }
     }
-    Robot getBestTarget(Robot[] robots, RobotController rc) throws Exception {
-        //Choose the best robot to attack. Prioritizes low HP units and SOLDIERS over PASTRS. Do not attack HQs (futile).
-        double lowest = (double)Integer.MAX_VALUE;
-        Robot weakest = null;
-        for (Robot r : robots){
-            double i;
-            RobotInfo rInfo = rc.senseRobotInfo(r);
-            if(weakest != null && rc.senseRobotInfo(weakest).type.equals(RobotType.SOLDIER) && !rInfo.type.equals(RobotType.SOLDIER) ){
-            }
-            if((i = rInfo.health) < lowest){
-                lowest = i; 
-                weakest = r;
+    RobotInfo getWeakestTargetInRange(ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
+        //Choose the best robot to attack.
+        //Prioritizes low HP units and SOLDIERS over PASTRS.
+        //Do not attack HQs (futile).
+        double lowestHP = (double)Integer.MAX_VALUE;
+        RobotInfo bestTarget = null;
+        for (RobotInfo info : enemyRobotInfo){
+            switch (info.type) {
+                case SOLDIER:
+                    if (info.health < lowestHP) {
+                        lowestHP = info.health;
+                        bestTarget = info;
+                    }
+                    break;
+                case PASTR:
+                    //Do not take priority over soldiers.
+                    if (bestTarget.type != RobotType.SOLDIER &&
+                        info.health < lowestHP) {
+                        lowestHP = info.health;
+                        bestTarget = info;
+                    }
+                    break;
             }
         }
-        return weakest;
+        return bestTarget;
     }
 }

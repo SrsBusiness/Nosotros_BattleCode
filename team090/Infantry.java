@@ -36,17 +36,16 @@ class Infantry extends Role{
                 } else {
                     aggression = 1;
                 }
+                //Set current location
+                MapLocation myLocation = rc.getLocation();
                 //Attacking, selecting the enemy with the lowest health.
                 if (enemyRobotInfo.size() > 0 && aggression > 0) {
-                    RobotInfo attackTarget = getWeakestTargetInRange(enemyRobotInfo);
+                    RobotInfo attackTarget = getWeakestTargetInRange(myLocation, enemyRobotInfo);
                     if (attackTarget != null) {
                         rc.attackSquare(attackTarget.location);
                         return;
                     }
                 }
-                //Set current location
-                MapLocation myLocation = rc.getLocation();
-                
                 tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 0);
             }
         } catch(Exception e) {

@@ -47,14 +47,14 @@ abstract class Role{
         enemyHQLocation = rc.senseEnemyHQLocation();
     }
 
-    Direction getNextAdjacentEmptyLocation(MapLocation myLocation, Direction initial) {
+    Direction getNextAdjacentEmptyLocation(MapLocation src, Direction initial) {
+        //TODO: cool math that orders things.
         try {
-            //TODO: Figure out how to not bad (10)
             for (Direction d : directions) {
                 if (d.equals(initial)) {
                     continue;
                 }
-                if(rc.senseObjectAtLocation(myLocation.add(d)) == null) {
+                if(rc.senseObjectAtLocation(src.add(d)) == null) {
                     return d;
                 }
             }
@@ -74,13 +74,11 @@ abstract class Role{
         boolean isOnPheromone = false;
         Direction desiredDirection;
 
-        //Calculate pheromone forces
         for (MapLocation p: myTrail) {
             if (src.equals(p)) {
                 isOnPheromone = true;
             }
         }
-        
         if (isOnPheromone) {
             //Calculate min-force obstacle pathfinding.
             desiredDirection = Direction.NONE;
@@ -88,17 +86,15 @@ abstract class Role{
             //Unobstructed walking
             desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
         }
+        //Error checking for move.
         if (rc.canMove(desiredDirection)) {
             rc.move(desiredDirection);
         } else {
             //Choose the next available location to escape the local minima.
             //If in charge mode, don't accidentally get too close.
-            //TODO: debate the validity of this conditional.
-            if (mode != 0) {
-                desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
-                if (desiredDirection != Direction.NONE) {
-                    rc.move(desiredDirection);
-                }
+            desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
+            if (desiredDirection != Direction.NONE) {
+                rc.move(desiredDirection);
             }
         }
         //Lay down pheromone trail.
@@ -125,7 +121,8 @@ abstract class Role{
             //Go to the enemyHQ, but keep a distance.
             //Have all units attempt to camp and surround the enemy base.
             //Don't walk alone blindly either. Walk with buddies.
-                enemyHQForce = enemyHQForce.log(3.9+1.2, 6);
+                enemyHQForce = enemyHQForce.log(3.9+1.2, 4);
+                allyHQForce = allyHQForce.log(6, 2);
                 //TODO: make sure this check is necassary
                 //Allied forces
                 if (allyRobots.size() > 0) {
@@ -171,7 +168,7 @@ abstract class Role{
                 //Stay together with allied soldiers, and if there are no allies,
                 //surround the ally HQ.
                 //TODO: Vector.step()
-                if(enemyHQForce.getMagnitudeSq() < 16) {
+                if (enemyHQForce.getMagnitudeSq() < 16) {
                     enemyHQForce = enemyHQForce.log(3.9+1.2, 6);
                 } else {
                     enemyHQForce = new Vector();
@@ -182,6 +179,7 @@ abstract class Role{
                     //Hover around the allied HQ.
                     allyHQForce = Vector.getForceVector(src, allyHQLocation).logistic(2, 1, 0);
                 } else {
+                    allyHQForce = new Vector();
                     count = 0;
                     for (RobotInfo i: allyRobots) {
                         switch (i.type) {
@@ -201,6 +199,9 @@ abstract class Role{
                     }
                 }
                 break;
+            case 2:
+                //Go home to allied HQ.
+                break;
         }
         if (myTrail.size() > 0) {
             count = 0;
@@ -217,13 +218,14 @@ abstract class Role{
                 pheromoneForce = pheromoneForce.scale(1.0/count);
             }
         }
-        netForce.add(allyForce);
-        netForce.add(enemyForce);
+        //netForce.add(allyForce);
+        //netForce.add(enemyForce);
         netForce.add(allyHQForce);
         netForce.add(enemyHQForce);
-        netForce.add(pheromoneForce);
+        //netForce.add(pheromoneForce);
         return netForce;
     } 
+    /*
     void moveToLocation(MapLocation src, MapLocation location){
         try {
             Direction moveDirection = src.directionTo(location);
@@ -240,13 +242,17 @@ abstract class Role{
             e.printStackTrace();
         }
     }
-    RobotInfo getWeakestTargetInRange(ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
+    */
+    RobotInfo getWeakestTargetInRange(MapLocation src, ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
         //Choose the best robot to attack.
         //Prioritizes low HP units and SOLDIERS over PASTRS.
         //Do not attack HQs (futile).
         double lowestHP = (double)Integer.MAX_VALUE;
         RobotInfo bestTarget = null;
         for (RobotInfo info : enemyRobotInfo){
+            if (src.distanceSquaredTo(info.location) > 10){
+                continue;
+            }
             switch (info.type) {
                 case SOLDIER:
                     if (info.health < lowestHP) {

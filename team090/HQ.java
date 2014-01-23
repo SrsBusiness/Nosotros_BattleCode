@@ -33,6 +33,7 @@ class HQ extends Role{
                 robotIDs.add(broadcastIn);
                 rc.broadcast(0, 0);
             }
+            /*
             if (robotIDs.size() == 5 && farmer == 0) {
                 farmer = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, farmer);
@@ -54,6 +55,7 @@ class HQ extends Role{
                 rc.broadcast(1, pirates[0]);
                 rc.broadcast(2, 4);
             }
+            */
             //Check if a robot is spawnable and spawn one if it is
             if (rc.isActive() &&
                 rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
@@ -75,7 +77,7 @@ class HQ extends Role{
             }
             //Attack nearby enemies (range^2 = 15).
             if(nearbyEnemyRobots.length > 0) {
-                rc.attackSquare(getWeakestTargetInRange(enemyRobotInfo).location);
+                rc.attackSquare(getWeakestTargetInRange(allyHQLocation, enemyRobotInfo).location);
             }
         } catch (Exception e) {
             System.err.println(e.toString() + " HQ Exception\n");

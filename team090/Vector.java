@@ -14,47 +14,38 @@ public class Vector {
         y = 0;
         magnitudeSq = 0;
     }
-
     public Vector(double xGiven, double yGiven) {
         x = xGiven;
         y = yGiven;
         magnitudeSq = x*x + y*y;
     }
-
     public double getX() {
         return x;
     }
-
     public double getY() {
         return y;
     }
-
     public double getMagnitude() {
         return Math.pow(magnitudeSq, 0.5);
     }
-
     public double getMagnitudeSq() {
         return magnitudeSq;
     }
-
     public Vector getUnitVector() {
         double magnitude = Math.pow(magnitudeSq, 0.5);
         Vector v = new Vector(x/magnitude, y/magnitude);
         return v;
     }
-
     public static Vector getForceVector(MapLocation src, MapLocation dst) {
         Vector force = new Vector(dst.x - src.x, dst.y - src.y);
         return force;
     }
- 
     //Modifier methods
     public void setXY(double x1, double y1) {
         x = x1;
         y = y1;
         magnitudeSq = x*x + y*y;
     }
-
     //Transforms
     public void add(double x1, double y1) {
         x += x1;
@@ -88,7 +79,6 @@ public class Vector {
     public Vector logistic(double root, double amplitude, double yShift) {
         return scale(amplitude*2/(1+(Math.pow(Math.E, (root-Math.pow(magnitudeSq, 0.5))))) - amplitude + yShift);
     }
-    
     //Return battlecode direction
     public Direction toDirectionEnum() {
         Direction[] directions = {

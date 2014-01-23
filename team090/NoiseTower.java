@@ -22,8 +22,8 @@ class NoiseTower extends Role {
     NoiseTower(RobotController rc) {
         super(rc);
         base = rc.getLocation();
+        System.out.println("C'est facil; herding cows. For I am the world's tower.");
     }
-
     void execute() {
         try {
             target = getSpiralLocation();
@@ -42,7 +42,6 @@ class NoiseTower extends Role {
         }
         rc.yield();
     }
-
     public MapLocation getSpiralLocation() {
         int x = (int)(radius * Math.sin(rotation*ROTATE_RADIAN));
         int y = (int)(radius * Math.cos(rotation*ROTATE_RADIAN));

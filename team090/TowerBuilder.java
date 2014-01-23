@@ -8,10 +8,12 @@ import java.util.*;
 
 class TowerBuilder extends Role{
     MapLocation target;
+    MapLocation myLocation;
 
-    TowerBuilder(RobotController rc, MapLocation towerSpot) {
+    TowerBuilder(RobotController rc, int x, int y) {
         super(rc);
-        target = towerSpot;
+        target = new MapLocation(x, y);
+        System.out.println("Bonjour, I am the builder of the world's most magnificent tower.");
     }
 
     void execute(){
@@ -22,8 +24,17 @@ class TowerBuilder extends Role{
                 //Construct the PASTR when the location matches.
                 rc.construct(RobotType.NOISETOWER);
             } else {
+                Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 35, myTeam);
+                ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
+                if (nearbyRobots.length > 0) {
+                    for (Robot r: nearbyRobots) {
+                        enemyRobotInfo.add(rc.senseRobotInfo(r));
+                    }
+                }
                 //Go to the target.
-                //moveTo(target);
+                myLocation = rc.getLocation();
+                System.out.println(enemyRobotInfo.length);
+                tryToWalk(myLocation, enemyRobotInfo, enemyRobotInfo, 3);
             }
         } catch(Exception e) {
             System.err.println(e + " TowerBuilder Exception");

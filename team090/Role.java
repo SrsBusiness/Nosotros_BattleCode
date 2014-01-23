@@ -74,7 +74,6 @@ abstract class Role{
         }
         return Direction.NONE;
     }
-    
     //TODO: fill in terrain to prevent getting stuck.
     void tryToWalk(MapLocation src,
                    ArrayList<RobotInfo> allyRobotInfo,
@@ -105,9 +104,9 @@ abstract class Role{
             rc.move(desiredDirection);
         } else {
             //Choose the next available location to escape the local minima.
-            //If in charge mode, don't accidentally get too close.
             desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
-            if (desiredDirection != Direction.NONE) {
+            if (desiredDirection != Direction.NONE &&
+                rc.canMove(desiredDirection)) {
                 rc.move(desiredDirection);
             }
         }
@@ -149,16 +148,13 @@ abstract class Role{
                       ArrayList<RobotInfo> enemyRobots,
                       int mode) throws Exception {
         Vector netForce = new Vector();
+        Vector targetForce = new Vector();
         Vector pheromoneForce = new Vector();
         Vector enemyHQForce = Vector.getForceVector(src, enemyHQLocation);
         Vector allyHQForce = Vector.getForceVector(src, allyHQLocation);
         Vector enemyForce = new Vector();
         Vector allyForce = new Vector();
         int count;
-
-        if (allyRobots.size() < 3) {
-            mode = 1;
-        }
 
         switch (mode) {
             case 0:
@@ -209,6 +205,7 @@ abstract class Role{
                         enemyForce = enemyForce.scale(1.0/count);
                     }
                 }
+                enemyForce = new Vector();
                 break;
             case 1:
                 //Grouping mode:
@@ -252,6 +249,37 @@ abstract class Role{
                 enemyHQForce = new Vector();
                 allyHQForce = allyHQForce.logistic(3, 4, 0);
                 break;
+            case 3:
+                //Have the enemy HQ only repel.
+                if (enemyHQForce.getMagnitudeSq() < 16) {
+                    enemyHQForce = enemyHQForce.log(3.9+1.2, 6);
+                } else {
+                    enemyHQForce = new Vector();
+                }
+                //Enemy forces
+                //TODO: add different mode responses and aggression parameter.
+                if (enemyRobots.size() > 0) {
+                    count = 0;
+                    for (RobotInfo i: enemyRobots) {
+                        switch (i.type) {
+                            case SOLDIER: 
+                                count++;
+                                enemyForce.add(Vector.getForceVector(src, i.location));
+                                break;
+                            //TODO: split up soldier and pastr forces
+                            case PASTR: 
+                                count++;
+                                enemyForce.add(Vector.getForceVector(src, i.location));
+                                break;
+                        }
+                    }
+                    if (count > 0) {
+                        //GA TODO: set scale factor.
+                        enemyForce = enemyForce.scale(1.0/count).log(0, -3);
+                    }
+                }
+                targetForce = Vector.getForceVector(src, target).logistic(0, 2, 0);
+                break;
         }
         if (myTrail.size() > 0) {
             count = 0;
@@ -268,8 +296,9 @@ abstract class Role{
                 pheromoneForce = pheromoneForce.scale(1.0/count);
             }
         }
+        netForce.add(targetForce);
         netForce.add(allyForce);
-        //netForce.add(enemyForce);
+        netForce.add(enemyForce);
         netForce.add(allyHQForce);
         netForce.add(enemyHQForce);
         //netForce.add(pheromoneForce);

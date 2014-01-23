@@ -9,10 +9,12 @@ import java.util.*;
 class Infantry extends Role{
     int mode = 0;    
     double fear = 0;
+    
     Infantry(RobotController rc) {
         super(rc);
+        System.out.println("Hola, I am minion.");
     }
-
+   
     void execute(){
         try {
             if(rc.isActive()) {
@@ -54,6 +56,9 @@ class Infantry extends Role{
                         return;
                     }
                 }
+                if (allyRobotInfo.size() < 3) {
+                    mode = 1;
+                }
                 //Moving, using potential field.
                 tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
             }
@@ -62,6 +67,5 @@ class Infantry extends Role{
             System.err.println(e + " Infantry Exception");
         }
     }
-
 }
 

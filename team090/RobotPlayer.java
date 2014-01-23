@@ -11,6 +11,8 @@ public class RobotPlayer {
     static RobotType myType;
     static Role currentRole;
     static int lifeTurn = 0;
+    static int x;
+    static int y;
     
     //TODO: make this nicer.
     private static void setCurrentRole(RobotController rc, RobotType type, int mode) {
@@ -33,7 +35,13 @@ public class RobotPlayer {
                         currentRole = new Pirate(rc, mode - 3);
                         break;
                     case 5:
-                        currentRole = new TowerBuilder(rc);
+                        try {
+                            x = rc.readBroadcast(3);
+                            y = rc.readBroadcast(4);
+                            currentRole = new TowerBuilder(rc, x, y);
+                        } catch (Exception e) {
+                            System.err.println(e + " Tried to create towerbuilder. Failed.");
+                        }
                         break;
                 }
                 break;
@@ -49,29 +57,37 @@ public class RobotPlayer {
     public static void run(RobotController rc) {
         //Initialize Role
         myType = rc.getType();
-        if(rc!=null)
+        int newMode;
+        if(rc != null) {
             setCurrentRole(rc, myType, 0);
+        } else {
+            //This should never happen. Be on the lookout.
+            return;
+        }
         while(true) {
+            newMode = 0;
             try {
-                int newMode = 0;
-                //Have soldiers poll for commands from the HQ
-                if (myType == RobotType.SOLDIER && rc.readBroadcast(1) == rc.getRobot().getID()) {
-                    newMode = rc.readBroadcast(2);
-                    // Probably unnessesary clearing of channels
-                    rc.broadcast(1, 0); 
-                    rc.broadcast(2, 0);
-                }
-                //Broadcast SOLDIER ID when spawned, if Soldier type.
-                if (++lifeTurn == 1 && myType == RobotType.SOLDIER) {
-                    rc.broadcast(0, rc.getRobot().getID());
-                }
-                //When a different mode is broadcasted, change accordingly.
-                if (mode != newMode) {
-                    setCurrentRole(rc, rc.getType(), newMode);
-                }
-                //When the type changes, change the role accordingly.
-                if (myType != rc.getType()) {
-                    setCurrentRole(rc, rc.getType(), newMode);
+                //Only SOLDIERs recieve orders, for now.
+                if (myType == RobotType.SOLDIER) {
+                    //Poll for commands from the HQ
+                    if (rc.readBroadcast(1) == rc.getRobot().getID()) {
+                        newMode = rc.readBroadcast(2);
+                        // Probably unnessesary clearing of channels
+                        rc.broadcast(1, 0); 
+                        rc.broadcast(2, 0);
+                    }
+                    //Broadcast ID when spawned
+                    if (lifeTurn++ == 0) {
+                        rc.broadcast(0, rc.getRobot().getID());
+                    }
+                    //When a different mode is broadcasted, change accordingly.
+                    //OR, when the RobotType changes, change the role accordingly.
+                    //TODO: bytecode optimize this.
+                    if (mode != newMode ||
+                        rc.getType() != RobotType.SOLDIER) {
+                        myType = rc.getType();
+                        setCurrentRole(rc, myType, newMode);
+                    }
                 }
             } catch (Exception e) {
                 System.err.println(e + " RobotPlayer Exception");

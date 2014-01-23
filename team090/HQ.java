@@ -24,6 +24,9 @@ class HQ extends Role{
     MapLocation selectFarmLocation() {
         return rc.getLocation().subtract(enemyDir);
     }
+    MapLocation selectNoiseTowerLocation() {
+        return null;
+    }
     
     void execute(){
         try {
@@ -48,8 +51,8 @@ class HQ extends Role{
                 //Figure out a good spot to put the noise tower.
                 //somthing something
                 //Broadcast xy
-                rc.broadcast(3, 0);
-                rc.broadcast(4, 0);
+                rc.broadcast(3, 10);
+                rc.broadcast(4, 10);
             }
             // else if (robotIDs.size() == 14 && pirates[0] == 0) {
             //    pirates[0] = robotIDs.get(robotIDs.size() - 1);

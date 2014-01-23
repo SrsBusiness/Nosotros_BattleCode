@@ -33,29 +33,28 @@ class HQ extends Role{
                 robotIDs.add(broadcastIn);
                 rc.broadcast(0, 0);
             }
-            /*
             if (robotIDs.size() == 5 && farmer == 0) {
-                farmer = robotIDs.get(robotIDs.size()-1);
-                rc.broadcast(1, farmer);
-                rc.broadcast(2, 1);
-                target = selectFarmLocation();
-                // Tell the farmer the intended farm location.
-                rc.broadcast(3, target.x);
-                rc.broadcast(4, target.y);
+            //    farmer = robotIDs.get(robotIDs.size()-1);
+            //    rc.broadcast(1, farmer);
+            //    rc.broadcast(2, 1);
+            //    target = selectFarmLocation();
+            //    // Tell the farmer the intended farm location.
+            //    rc.broadcast(3, target.x);
+            //    rc.broadcast(4, target.y);
             } else if (robotIDs.size() == 6 && noisetowerMaker == 0) {
-                //noisetowerMaker = robotIDs.get(robotIDs.size()-1);
-                //rc.broadcast(1, noisetowerMaker);
-                //rc.broadcast(2, 2);
-            } else if (robotIDs.size() == 14 && pirates[0] == 0) {
-                pirates[0] = robotIDs.get(robotIDs.size() - 1);
-                rc.broadcast(1, pirates[0]);
-                rc.broadcast(2, 3);
-            } else if (robotIDs.size() == 15 && pirates[1] == 0) {
-                pirates[1] = robotIDs.get(robotIDs.size() - 1);
-                rc.broadcast(1, pirates[0]);
-                rc.broadcast(2, 4);
-            }
-            */
+                noisetowerMaker = robotIDs.get(robotIDs.size()-1);
+                rc.broadcast(1, noisetowerMaker);
+                rc.broadcast(2, 5);
+            }// else if (robotIDs.size() == 14 && pirates[0] == 0) {
+            //    pirates[0] = robotIDs.get(robotIDs.size() - 1);
+            //    rc.broadcast(1, pirates[0]);
+            //    rc.broadcast(2, 3);
+            //} else if (robotIDs.size() == 15 && pirates[1] == 0) {
+            //    pirates[1] = robotIDs.get(robotIDs.size() - 1);
+            //    rc.broadcast(1, pirates[0]);
+            //    rc.broadcast(2, 4);
+            //}
+            
             //Check if a robot is spawnable and spawn one if it is
             if (rc.isActive() &&
                 rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {

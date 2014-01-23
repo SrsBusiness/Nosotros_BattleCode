@@ -11,7 +11,8 @@ public class RobotPlayer {
     static RobotType myType;
     static Role currentRole;
     static int lifeTurn = 0;
-
+    
+    //TODO: make this nicer.
     private static void setCurrentRole(RobotController rc, RobotType type, int mode) {
         switch (type) {
             case HQ:
@@ -31,7 +32,9 @@ public class RobotPlayer {
                     case 3: case 4:
                         currentRole = new Pirate(rc, mode - 3);
                         break;
-
+                    case 5:
+                        currentRole = new TowerBuilder(rc);
+                        break;
                 }
                 break;
             case NOISETOWER:
@@ -63,6 +66,9 @@ public class RobotPlayer {
                     rc.broadcast(0, rc.getRobot().getID());
                 }
                 if (mode != newMode) {
+                    setCurrentRole(rc, rc.getType(), newMode);
+                }
+                if (myType != rc.getType()) {
                     setCurrentRole(rc, rc.getType(), newMode);
                 }
             } catch (Exception e) {

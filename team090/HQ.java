@@ -76,8 +76,11 @@ class HQ extends Role{
                 enemyRobotInfo.add(rc.senseRobotInfo(r));
             }
             //Attack nearby enemies (range^2 = 15).
-            if(nearbyEnemyRobots.length > 0) {
-                rc.attackSquare(getWeakestTargetInRange(allyHQLocation, enemyRobotInfo).location);
+            if(enemyRobotInfo.size() > 0) {
+                RobotInfo target = getWeakestTargetInRange(allyHQLocation, enemyRobotInfo);
+                if (target != null) {
+                    rc.attackSquare(target.location);
+                }
             }
         } catch (Exception e) {
             System.err.println(e.toString() + " HQ Exception\n");

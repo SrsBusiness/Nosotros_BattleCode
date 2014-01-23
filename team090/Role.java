@@ -15,8 +15,17 @@ abstract class Role{
         Direction.SOUTH_EAST, 
         Direction.SOUTH, 
         Direction.SOUTH_WEST, 
-        Direction.WEST, 
-        Direction.NORTH_WEST };
+        Direction.WEST,
+        Direction.NORTH_WEST};
+    //Used for collisions
+    Direction[] directionAlts = {
+        Direction.NORTH_EAST, 
+        Direction.NORTH_WEST,
+        Direction.EAST, 
+        Direction.WEST,
+        Direction.SOUTH_EAST, 
+        Direction.SOUTH_WEST, 
+        Direction.SOUTH};
     Random rand;
     //Values set on constructor call
     RobotController rc;
@@ -48,13 +57,14 @@ abstract class Role{
     }
 
     Direction getNextAdjacentEmptyLocation(MapLocation src, Direction initial) {
-        //TODO: cool math that orders things.
+        Direction[] alternatives = new Direction[7];
+        int offset = initial.ordinal();
+        for(int i = 0; i < 7; i++) {
+            alternatives[i] = directions[(directionAlts[i].ordinal()+offset)%8];
+        }
         try {
-            for (Direction d : directions) {
-                if (d.equals(initial)) {
-                    continue;
-                }
-                if(rc.senseObjectAtLocation(src.add(d)) == null) {
+            for (Direction d: alternatives) {
+                if(rc.canMove(d)) {
                     return d;
                 }
             }
@@ -80,20 +90,23 @@ abstract class Role{
             }
         }
         if (isOnPheromone) {
-            //Calculate min-force obstacle pathfinding.
-            desiredDirection = Direction.NONE;
+            //TODO: Calculate min-force obstacle pathfinding.
+            desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
         } else {
             //Unobstructed walking
             desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
         }
         //Error checking for move.
-        if (rc.canMove(desiredDirection)) {
+        //TODO: figure out how action delay works.
+        if (rc.canMove(desiredDirection) &&
+            rc.getActionDelay() < 9900) {
             rc.move(desiredDirection);
         } else {
             //Choose the next available location to escape the local minima.
             //If in charge mode, don't accidentally get too close.
             desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
-            if (desiredDirection != Direction.NONE) {
+            if (desiredDirection != Direction.NONE &&
+                rc.getActionDelay() <= 9900) {
                 rc.move(desiredDirection);
             }
         }
@@ -104,9 +117,37 @@ abstract class Role{
             myTrail.remove();
         }
     }
+    double howScared(MapLocation src,
+                     ArrayList<RobotInfo> allyRobotInfo,
+                     ArrayList<RobotInfo> enemyRobotInfo) {
+        if (rc.getHealth() <= 30) {
+            return 10;
+        }
+        int nearbyAllyCount = 0;
+        int nearbyEnemyCount = 0;
+        for (RobotInfo info: allyRobotInfo) {
+            if (src.distanceSquaredTo(info.location) < 36) {
+                nearbyAllyCount++;
+            }
+        }
+        //TODO: see if this makes a difference.
+        for (RobotInfo info: enemyRobotInfo) {
+            if (src.distanceSquaredTo(info.location) < 36) {
+                nearbyEnemyCount++;
+            }
+        }
+        System.out.printf("%d vs %d\n", nearbyAllyCount, nearbyEnemyCount);
+        if (nearbyAllyCount < nearbyEnemyCount) {
+            return 1+nearbyEnemyCount-nearbyAllyCount;
+        }
+        return 0;
+    }
     //TODO: bytecode optimize this call so that
     //only one call to senseNearbyGameObjects needs to be made each turn.
-    Vector netForceAt(MapLocation src, ArrayList<RobotInfo> allyRobots, ArrayList<RobotInfo> enemyRobots, int mode) throws Exception {
+    Vector netForceAt(MapLocation src,
+                      ArrayList<RobotInfo> allyRobots,
+                      ArrayList<RobotInfo> enemyRobots,
+                      int mode) throws Exception {
         Vector netForce = new Vector();
         Vector pheromoneForce = new Vector();
         Vector enemyHQForce = Vector.getForceVector(src, enemyHQLocation);
@@ -115,14 +156,19 @@ abstract class Role{
         Vector allyForce = new Vector();
         int count;
 
+        if (allyRobots.size() < 3) {
+            mode = 1;
+        }
+
         switch (mode) {
             case 0:
             //Charge mode:
             //Go to the enemyHQ, but keep a distance.
             //Have all units attempt to camp and surround the enemy base.
             //Don't walk alone blindly either. Walk with buddies.
-                enemyHQForce = enemyHQForce.log(3.9+1.2, 4);
-                allyHQForce = allyHQForce.log(6, 2);
+                //GA TODO: paramaterize weights.
+                enemyHQForce = enemyHQForce.log(3.9+2, 4);
+                allyHQForce = allyHQForce.log(6, 0.2);
                 //TODO: make sure this check is necassary
                 //Allied forces
                 if (allyRobots.size() > 0) {
@@ -139,6 +185,7 @@ abstract class Role{
                         //GA TODO: set scale factor.
                         allyForce = allyForce.scale(1.0/count);
                     }
+                    allyForce.log(2.7, 2.2);
                 }
                 //Enemy forces
                 //TODO: add different mode responses and aggression parameter.
@@ -164,7 +211,7 @@ abstract class Role{
                 }
                 break;
             case 1:
-                //Gather mode:
+                //Grouping mode:
                 //Stay together with allied soldiers, and if there are no allies,
                 //surround the ally HQ.
                 //TODO: Vector.step()
@@ -177,9 +224,9 @@ abstract class Role{
                 //GA TODO: Parameterize army size.
                 if (allyRobots.size() < 3) {
                     //Hover around the allied HQ.
-                    allyHQForce = Vector.getForceVector(src, allyHQLocation).logistic(2, 1, 0);
+                    allyHQForce = allyHQForce.logistic(2, 5, 0);
                 } else {
-                    allyHQForce = new Vector();
+                    allyHQForce = allyHQForce.logistic(2, 1, 0);
                     count = 0;
                     for (RobotInfo i: allyRobots) {
                         switch (i.type) {
@@ -197,10 +244,13 @@ abstract class Role{
                         //GA TODO: Parameterize scale.
                         allyForce = allyForce.scale(1.0/count);
                     }
+                    allyForce.logistic(2, 2, 0);
                 }
                 break;
             case 2:
                 //Go home to allied HQ.
+                enemyHQForce = new Vector();
+                allyHQForce = allyHQForce.logistic(3, 4, 0);
                 break;
         }
         if (myTrail.size() > 0) {
@@ -218,31 +268,13 @@ abstract class Role{
                 pheromoneForce = pheromoneForce.scale(1.0/count);
             }
         }
-        //netForce.add(allyForce);
+        netForce.add(allyForce);
         //netForce.add(enemyForce);
         netForce.add(allyHQForce);
         netForce.add(enemyHQForce);
         //netForce.add(pheromoneForce);
         return netForce;
     } 
-    /*
-    void moveToLocation(MapLocation src, MapLocation location){
-        try {
-            Direction moveDirection = src.directionTo(location);
-            if (rc.canMove(moveDirection)) {
-                rc.move(moveDirection);
-            } else {
-                moveDirection = getNextAdjacentEmptyLocation(src, moveDirection);
-                if (moveDirection != Direction.NONE) {
-                    rc.move(moveDirection);
-                }
-            }
-        } catch(Exception e) {
-            System.err.println(e + " Pirate Exception");
-            e.printStackTrace();
-        }
-    }
-    */
     RobotInfo getWeakestTargetInRange(MapLocation src, ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
         //Choose the best robot to attack.
         //Prioritizes low HP units and SOLDIERS over PASTRS.

@@ -28,19 +28,18 @@ class Infantry extends Role{
                         enemyRobotInfo.add(info);
                     }
                 }
-                //TODO: Caluculate individual aggression.
-                if ((enemyRobotInfo.size() >= allyRobotInfo.size() &&
-                     rc.getHealth() < 60) ||
-                    rc.getHealth() < 30) {
-                    aggression = 0;
-                } else {
-                    aggression = 1;
-                }
                 //Set current location
                 MapLocation myLocation = rc.getLocation();
-                //Attacking, selecting the enemy with the lowest health.
-                if (enemyRobotInfo.size() > 0 && aggression > 0) {
-                    RobotInfo attackTarget = getWeakestTargetInRange(myLocation, enemyRobotInfo);
+                double fear = howScared(myLocation, allyRobotInfo, enemyRobotInfo);
+                if (fear > 5) {
+                    //Moving, using potential field.
+                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 2);
+                } else if (fear > 0) {
+                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 1);
+                } else if (enemyRobotInfo.size() > 0) {
+                    //Attacking, selecting the enemy with the lowest health.
+                    RobotInfo attackTarget = getWeakestTargetInRange(myLocation,
+                                                                     enemyRobotInfo);
                     if (attackTarget != null) {
                         rc.attackSquare(attackTarget.location);
                         return;

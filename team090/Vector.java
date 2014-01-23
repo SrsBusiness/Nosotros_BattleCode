@@ -1,6 +1,7 @@
 package team090;
 
 import battlecode.common.Direction;
+import battlecode.common.MapLocation;
 import java.lang.Math;
 
 public class Vector {
@@ -42,6 +43,11 @@ public class Vector {
         return v;
     }
 
+    public static Vector getForceVector(MapLocation src, MapLocation dst) {
+        Vector force = new Vector(dst.x - src.x, dst.y - src.y);
+        return force;
+    }
+ 
     //Modifier methods
     public void setXY(double x1, double y1) {
         x = x1;
@@ -50,11 +56,15 @@ public class Vector {
     }
 
     //Transforms
-    public Vector add(double x1, double y1) {
-        return new Vector(x+x1, y+y1);
+    public void add(double x1, double y1) {
+        x += x1;
+        y += y1;
+        //return new Vector(x+x1, y+y1);
     }
-    public Vector add(Vector v) {
-        return new Vector(x+v.getX(), y+v.getY());
+    public void add(Vector v) {
+        x += v.getX();
+        y += v.getY();
+        //return new Vector(x+v.getX(), y+v.getY());
     }
     public Vector scale(double s) {
         return new Vector(x*s, y*s);

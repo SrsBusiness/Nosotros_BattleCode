@@ -34,7 +34,7 @@ class Pirate extends Role{
             myLocation = rc.getLocation();
             //if(!found){
                 if(!atTarget) {
-                    moveToLocation(rc, nextWaypoint);
+                    //moveToLocation(rc, nextWaypoint);
                     if (myLocation.equals(corner)) {
                         atTarget = true;
                     }
@@ -63,22 +63,6 @@ class Pirate extends Role{
             System.out.println(m);
         }
         return result;
-    }
-    void moveToLocation(RobotController rc, MapLocation location){
-        try {
-            Direction moveDirection = myLocation.directionTo(location);
-            if (rc.canMove(moveDirection)) {
-                rc.move(moveDirection);
-            } else {
-                moveDirection = getNextAdjacentEmptyLocation(myLocation, moveDirection);
-                if (moveDirection != Direction.NONE) {
-                    rc.move(moveDirection);
-                }
-            }
-        } catch(Exception e) {
-            System.err.println(e + " Pirate Exception");
-            e.printStackTrace();
-        }
     }
     void patrol(){
         try{

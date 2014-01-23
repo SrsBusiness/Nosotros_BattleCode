@@ -43,7 +43,7 @@ class Infantry extends Role{
                     myTrail.remove();
                 }
 
-                Direction moveDirection = chooseDir(rc, myTrail);
+                Direction moveDirection = chooseDirection(myLocation, rc.senseNearbyGameObjects(Robot.class), 0);
                 if (rc.canMove(moveDirection)) {
                     rc.move(moveDirection);
                 } else {

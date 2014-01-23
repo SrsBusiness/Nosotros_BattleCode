@@ -296,8 +296,8 @@ abstract class Role{
                 case PASTR:
                     //Do not take priority over soldiers.
                     if ((bestTarget == null
-                         || bestTarget.type != RobotType.SOLDIER)
-                        && info.health < lowestHP) {
+                         || bestTarget.type != RobotType.SOLDIER) &&
+                        info.health < lowestHP) {
                         lowestHP = info.health;
                         bestTarget = info;
                     }

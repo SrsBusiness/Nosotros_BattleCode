@@ -7,7 +7,8 @@ import battlecode.common.*;
 import java.util.*;
 
 class Infantry extends Role{
-    
+    int mode = 0;    
+    double fear = 0;
     Infantry(RobotController rc) {
         super(rc);
     }
@@ -30,12 +31,20 @@ class Infantry extends Role{
                 }
                 //Set current location
                 MapLocation myLocation = rc.getLocation();
-                double fear = howScared(myLocation, allyRobotInfo, enemyRobotInfo);
-                if (fear > 5) {
-                    //Moving, using potential field.
-                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 2);
+                fear = howScared(myLocation, allyRobotInfo, enemyRobotInfo);
+                //GA TODO: parameterize the health threshold.
+                if (fear == 0 && rc.getHealth() > 70) {
+                    mode = 0;
+                } else if (fear == 10) {
+                    mode = 2;
+                } else if (fear > 5) {
+                    return;
                 } else if (fear > 0) {
-                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 1);
+                    mode = 1;
+                } 
+                if (fear > 6) {
+                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
+                    return;
                 } else if (enemyRobotInfo.size() > 0) {
                     //Attacking, selecting the enemy with the lowest health.
                     RobotInfo attackTarget = getWeakestTargetInRange(myLocation,
@@ -45,7 +54,8 @@ class Infantry extends Role{
                         return;
                     }
                 }
-                tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 0);
+                //Moving, using potential field.
+                tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
             }
         } catch(Exception e) {
             e.printStackTrace();

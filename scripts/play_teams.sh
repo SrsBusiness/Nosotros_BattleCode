@@ -1,5 +1,5 @@
 #!/bin/sh
-OUR_TEAM="Nosotros_BattleCode"
+OUR_TEAM="team090"
 MAP="rushlane"
 
 match() {

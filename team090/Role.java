@@ -97,16 +97,17 @@ abstract class Role{
             desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
         }
         //Error checking for move.
-        //TODO: figure out how action delay works.
-        if (rc.canMove(desiredDirection) &&
-            rc.getActionDelay() < 9900) {
+        //TODO: figure out how action delay works.x
+        while (rc.getActionDelay() > 1) {
+            rc.yield();
+        }
+        if (rc.canMove(desiredDirection)) {
             rc.move(desiredDirection);
         } else {
             //Choose the next available location to escape the local minima.
             //If in charge mode, don't accidentally get too close.
             desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
-            if (desiredDirection != Direction.NONE &&
-                rc.getActionDelay() <= 9900) {
+            if (desiredDirection != Direction.NONE) {
                 rc.move(desiredDirection);
             }
         }
@@ -294,8 +295,9 @@ abstract class Role{
                     break;
                 case PASTR:
                     //Do not take priority over soldiers.
-                    if (bestTarget.type != RobotType.SOLDIER &&
-                        info.health < lowestHP) {
+                    if ((bestTarget == null
+                         || bestTarget.type != RobotType.SOLDIER)
+                        && info.health < lowestHP) {
                         lowestHP = info.health;
                         bestTarget = info;
                     }

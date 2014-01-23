@@ -48,6 +48,7 @@ class Infantry extends Role{
                 tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, 0);
             }
         } catch(Exception e) {
+            e.printStackTrace();
             System.err.println(e + " Infantry Exception");
         }
     }

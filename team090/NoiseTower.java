@@ -27,7 +27,9 @@ class NoiseTower extends Role {
     void execute() {
         try {
             target = getSpiralLocation();
-            if (rc.canAttackSquare(target)) {
+            if (rc.canAttackSquare(target) && 
+                    //Optional:
+                (target.x > 0 && target.y > 0 && target.x < mapWidth && target.y < mapHeight)) {
                 rc.attackSquare(target);
             }
             rotation += 1;

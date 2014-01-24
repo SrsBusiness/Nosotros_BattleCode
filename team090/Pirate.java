@@ -6,78 +6,70 @@ import battlecode.common.RobotType;
 import battlecode.common.*;
 import java.util.*;
 
-class Pirate extends Role{
-    boolean patrolDir;
-    MapLocation corner;
-    MapLocation pastr;
-    boolean atTarget;
-    boolean found;
-    boolean xDir, yDir;
-    int height, width;
+class Pirate extends Role {
+    int mode = 0;    
+    double fear = 0;
     MapLocation myLocation;
-    MapLocation[] corners;
-    MapLocation nextWaypoint;
-
-    Pirate(RobotController rc, int mode){
+    MapLocation[] enemyPastrs = new MapLocation[0];
+    
+    Pirate(RobotController rc) {
         super(rc);
-        while(!rc.isActive());
-        corners = corners(rc);
-        corner = corners[mode];
-        height = rc.getMapHeight();
-        width = rc.getMapWidth();
-
-        nextWaypoint = corner;
     }
-
     void execute(){
-        if (rc.isActive()) {
-            myLocation = rc.getLocation();
-            //if(!found){
-                if(!atTarget) {
-                    //moveToLocation(rc, nextWaypoint);
-                    if (myLocation.equals(corner)) {
-                        atTarget = true;
+        try {
+            if(rc.isActive()) {
+                Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class);
+                ArrayList<RobotInfo> allyRobotInfo = new ArrayList<RobotInfo>();
+                ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
+                //Populate the knowledge of all nearby robots.
+                RobotInfo info;
+                for (Robot r: nearbyRobots) {
+                    info = rc.senseRobotInfo(r);
+                    if (info.team == myTeam) {
+                        allyRobotInfo.add(info);
+                    } else if (info.team == notMyTeam) {
+                        enemyRobotInfo.add(info);
                     }
-                } else {
-                    atTarget = false;
-                    patrol();
                 }
-            //} else {
-            //    ; 
-            //}
-        }
-    }
-    MapLocation[] corners(final RobotController rc){
-        class LocComparator implements Comparator<MapLocation>{
-            public int compare(MapLocation l1, MapLocation l2){
-                MapLocation enemy = rc.senseEnemyHQLocation();
-                return l2.distanceSquaredTo(enemy) - l1.distanceSquaredTo(enemy);
+                //Set current location
+                myLocation = rc.getLocation();
+                fear = howScared(myLocation, allyRobotInfo, enemyRobotInfo);
+                //GA TODO: parameterize the health threshold.
+                if (fear == 0 && rc.getHealth() > 70) {
+                    mode = 0;
+                } else if (fear == 10) {
+                    mode = 2;
+                } else if (fear > 0) {
+                    mode = 1;
+                }
+                if (fear > 4) {
+                    myLocation = rc.getLocation(); //JUST IN CASE PLS
+                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
+                    return;
+                }
+                //Sniping PASTRs
+                if (enemyPastrs.length > 0) {
+                    mode = 3;
+                    target = enemyPastrs[0];
+                } else {
+                    mode = 1;
+                    enemyPastrs = rc.sensePastrLocations(notMyTeam);
+                }
+                if (enemyRobotInfo.size() > 0) {
+                    //Attacking, selecting the enemy with the lowest health.
+                    RobotInfo attackTarget = getWeakestTargetInRange(myLocation,
+                                                                     enemyRobotInfo);
+                    if (attackTarget != null) {
+                        rc.attackSquare(attackTarget.location);
+                        return;
+                    }
+                }
+                //Moving, using potential field.
+                myLocation = rc.getLocation(); //JUST IN CASE PLS
+                tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
             }
-        }
-        MapLocation[] result = new MapLocation[]{new MapLocation(3, 3), 
-            new MapLocation(3, mapHeight - 4), 
-            new MapLocation(mapWidth - 4, 3), 
-            new MapLocation(mapWidth - 4, mapHeight - 4)};
-        Arrays.sort(result, new LocComparator());
-        for (MapLocation m : result) {
-            System.out.println(m);
-        }
-        return result;
-    }
-    void patrol(){
-        try{
-            corner = corners[rand.nextInt(corners.length)];
-            /*
-            MapLocation current = rc.getLocation();
-            if(current.y == 0 && yDir || current.y == height - 1 && !yDir){
-                yDir = !yDir;
-                if(current.x == 0 && xDir || current.x == width - 1 && !xDir)
-                    xDir = !xDir;
-                rc.move(xDir ? Direction.WEST : Direction.EAST);
-            }
-            rc.move(yDir ? Direction.NORTH : Direction.SOUTH);
-            */
-        }catch(Exception e){
+        } catch(Exception e) {
+            e.printStackTrace();
             System.err.println(e + " Pirate Exception");
         }
     }

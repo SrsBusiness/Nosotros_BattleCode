@@ -105,8 +105,8 @@ abstract class Role{
         } else {
             //Choose the next available location to escape the local minima.
             desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
-            if (desiredDirection != Direction.NONE &&
-                rc.canMove(desiredDirection)) {
+            if ((desiredDirection != Direction.NONE) && 
+                (rc.canMove(desiredDirection))) {
                 rc.move(desiredDirection);
             }
         }
@@ -136,7 +136,8 @@ abstract class Role{
                 nearbyEnemyCount++;
             }
         }
-        if (nearbyAllyCount < nearbyEnemyCount) {
+        if (nearbyAllyCount < nearbyEnemyCount ||
+            (nearbyEnemyCount > 1 && nearbyAllyCount < nearbyEnemyCount+1)) {
             return 1+nearbyEnemyCount-nearbyAllyCount;
         }
         return 0;
@@ -250,7 +251,9 @@ abstract class Role{
                 allyHQForce = allyHQForce.logistic(3, 4, 0);
                 break;
             case 3:
+                //Go to target mode.
                 //Have the enemy HQ only repel.
+                allyHQForce = new Vector();
                 if (enemyHQForce.getMagnitudeSq() < 16) {
                     enemyHQForce = enemyHQForce.log(3.9+1.2, 6);
                 } else {
@@ -266,29 +269,29 @@ abstract class Role{
                                 count++;
                                 enemyForce.add(Vector.getForceVector(src, i.location));
                                 break;
-                            //TODO: split up soldier and pastr forces
-                            case PASTR: 
-                                count++;
-                                enemyForce.add(Vector.getForceVector(src, i.location));
-                                break;
                         }
                     }
                     if (count > 0) {
                         //GA TODO: set scale factor.
-                        enemyForce = enemyForce.scale(1.0/count).log(0, -3);
+                        enemyForce = enemyForce.scale(1.0/count);
                     }
                 }
-                targetForce = Vector.getForceVector(src, target).logistic(0, 2, 0);
+                enemyForce = enemyForce.log(0, -2);
+                //if (enemyForce.getMagnitudeSq() < 1) {
+                    enemyForce = new Vector();
+                //}
+                targetForce = Vector.getForceVector(src, target).logistic(-2, 2, 0);
                 break;
         }
         if (myTrail.size() > 0) {
             count = 0;
-            for (Object p: myTrail.toArray()) {
-                if (src.equals((MapLocation)p)) {
+            for (MapLocation p: myTrail) {
+                if (src.equals(p)) {
                     continue;
                 } else {
                     count++;
-                    pheromoneForce.add(Vector.getForceVector(src, (MapLocation)p));
+                    pheromoneForce.add(Vector.getForceVector(src,
+                                                             p).poly(0, 0, 1, 0, 0));
                 }
             }
             if (myTrail.size() > 0) {
@@ -310,8 +313,8 @@ abstract class Role{
         //Do not attack HQs (futile).
         double lowestHP = (double)Integer.MAX_VALUE;
         RobotInfo bestTarget = null;
-        for (RobotInfo info : enemyRobotInfo){
-            if (src.distanceSquaredTo(info.location) > 10){
+        for (RobotInfo info : enemyRobotInfo) {
+            if (src.distanceSquaredTo(info.location) > 10) {
                 continue;
             }
             switch (info.type) {
@@ -333,5 +336,22 @@ abstract class Role{
             }
         }
         return bestTarget;
+    }
+    MapLocation[] corners() {
+        class LocComparator implements Comparator<MapLocation> {
+            public int compare(MapLocation l1, MapLocation l2){
+                return l2.distanceSquaredTo(enemyHQLocation) - l1.distanceSquaredTo(enemyHQLocation);
+            }
+        }
+        MapLocation[] result = new MapLocation[]{
+            new MapLocation(3, 3), 
+            new MapLocation(3, mapHeight - 4), 
+            new MapLocation(mapWidth - 4, 3), 
+            new MapLocation(mapWidth - 4, mapHeight - 4)};
+        Arrays.sort(result, new LocComparator());
+        for (MapLocation m : result) {
+            System.out.println(m);
+        }
+        return result;
     }
 }

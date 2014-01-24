@@ -15,12 +15,12 @@ if __name__ == "__main__":
     projectDir = ''
     if "RobotPlayer.java" in os.listdir('.'):
         projectDir = '.'
-    elif "RobotPlayer.java" in os.listdir(os.environ['HOME']+'/battlecode/teams/Nosotros_BattleCode'):
-        projectDir = os.environ['HOME']+'/battlecode/teams/Nosotros_BattleCode'
+    elif "RobotPlayer.java" in os.listdir(os.environ['HOME']+'/battlecode/teams/Nosotros_BattleCode/team090'):
+        projectDir = os.environ['HOME']+'/battlecode/teams/Nosotros_BattleCode/team090'
     else:
         projectDir = raw_input("Could not autodetect team to submit.\nSpecify explicit path: ")
     print "Generating jar...\r",
-    p = subprocess.Popen(["jar","-cf", "/tmp/battlecode.jar", projectDir+"/*.java"],
+    p = subprocess.Popen(["jar","-cf", "/tmp/battlecode.jar", projectDir+"/"],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     output, errors = p.communicate()

@@ -62,6 +62,12 @@ public class Vector {
     }
     public Vector poly(double c0, double c1,
                        double c2, double c3,
+                       double c4) {
+        double r = getMagnitude();
+        return this.scale(c0*(r-c1)+c2/(r-c3)+c4);
+    }
+    public Vector poly(double c0, double c1,
+                       double c2, double c3,
                        double c4, double c5,
                        double c6, double c7,
                        double c8) {

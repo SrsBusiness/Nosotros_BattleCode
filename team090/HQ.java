@@ -22,12 +22,13 @@ class HQ extends Role{
     }
 
     MapLocation selectFarmLocation() {
-        return rc.getLocation().subtract(enemyDir);
+        target = corners()[1];
+        return target;
     }
     MapLocation selectNoiseTowerLocation() {
-        return null;
+        target = corners()[1].add(0, 1);
+        return target;
     }
-    
     void execute(){
         try {
             //Single-robot commands executed through broadcasts.
@@ -36,43 +37,42 @@ class HQ extends Role{
                 robotIDs.add(broadcastIn);
                 rc.broadcast(0, 0);
             }
-            if (robotIDs.size() == 5 && farmer == 0) {
-            //    farmer = robotIDs.get(robotIDs.size()-1);
-            //    rc.broadcast(1, farmer);
-            //    rc.broadcast(2, 1);
-            //    target = selectFarmLocation();
-            //    // Tell the farmer the intended farm location.
-            //    rc.broadcast(3, target.x);
-            //    rc.broadcast(4, target.y);
-            } else if (robotIDs.size() == 6 && noisetowerMaker == 0) {
+            //GA TODO: set the PASTR construction time.
+            if (robotIDs.size() == 20 && farmer == 0) {
+                farmer = robotIDs.get(robotIDs.size()-1);
+                rc.broadcast(1, farmer);
+                rc.broadcast(2, 1);
+                target = selectFarmLocation();
+                rc.broadcast(3, target.x);
+                rc.broadcast(4, target.y);
+            } else if (robotIDs.size() == 21 && noisetowerMaker == 0) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
                 rc.broadcast(2, 5);
-                //Figure out a good spot to put the noise tower.
-                //somthing something
-                //Broadcast xy
-                rc.broadcast(3, 10);
-                rc.broadcast(4, 10);
+                target = selectNoiseTowerLocation();
+                rc.broadcast(3, target.x);
+                rc.broadcast(4, target.y);
+            } else if (robotIDs.size() == 8 && pirates[0] == 0) {
+                pirates[0] = robotIDs.get(robotIDs.size() - 1);
+                rc.broadcast(1, pirates[0]);
+                rc.broadcast(2, 3);
+            } else if (robotIDs.size() == 9 && pirates[1] == 0) {
+                pirates[1] = robotIDs.get(robotIDs.size() - 1);
+                rc.broadcast(1, pirates[1]);
+                rc.broadcast(2, 4);
             }
-            // else if (robotIDs.size() == 14 && pirates[0] == 0) {
-            //    pirates[0] = robotIDs.get(robotIDs.size() - 1);
-            //    rc.broadcast(1, pirates[0]);
-            //    rc.broadcast(2, 3);
-            //} else if (robotIDs.size() == 15 && pirates[1] == 0) {
-            //    pirates[1] = robotIDs.get(robotIDs.size() - 1);
-            //    rc.broadcast(1, pirates[0]);
-            //    rc.broadcast(2, 4);
-            //}
             
             //Check if a robot is spawnable and spawn one if it is
             if (rc.isActive() &&
                 rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
                 if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
                     rc.spawn(enemyDir);
+                    return;
                 } else {
                     Direction availDir = getNextAdjacentEmptyLocation(myLocation, enemyDir);
                     if (availDir != Direction.NONE) {
                         rc.spawn(availDir);
+                        return;
                     }
                 }
             }
@@ -88,6 +88,7 @@ class HQ extends Role{
                 RobotInfo target = getWeakestTargetInRange(allyHQLocation, enemyRobotInfo);
                 if (target != null) {
                     rc.attackSquare(target.location);
+                    return;
                 }
             }
         } catch (Exception e) {

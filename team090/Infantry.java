@@ -9,10 +9,10 @@ import java.util.*;
 class Infantry extends Role{
     int mode = 0;    
     double fear = 0;
+    MapLocation myLocation;
     
     Infantry(RobotController rc) {
         super(rc);
-        System.out.println("Hola, I am minion.");
     }
    
     void execute(){
@@ -32,19 +32,18 @@ class Infantry extends Role{
                     }
                 }
                 //Set current location
-                MapLocation myLocation = rc.getLocation();
+                myLocation = rc.getLocation();
                 fear = howScared(myLocation, allyRobotInfo, enemyRobotInfo);
                 //GA TODO: parameterize the health threshold.
                 if (fear == 0 && rc.getHealth() > 70) {
                     mode = 0;
                 } else if (fear == 10) {
                     mode = 2;
-                } else if (fear > 5) {
-                    return;
                 } else if (fear > 0) {
                     mode = 1;
                 } 
-                if (fear > 6) {
+                if (fear > 4) {
+                    myLocation = rc.getLocation(); //JUST IN CASE PLS
                     tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
                     return;
                 } else if (enemyRobotInfo.size() > 0) {
@@ -60,6 +59,7 @@ class Infantry extends Role{
                     mode = 1;
                 }
                 //Moving, using potential field.
+                myLocation = rc.getLocation(); //JUST IN CASE PLS
                 tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
             }
         } catch(Exception e) {

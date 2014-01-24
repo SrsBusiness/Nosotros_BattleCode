@@ -26,21 +26,28 @@ public class RobotPlayer {
                         currentRole = new Infantry(rc);
                         break;
                     case 1:
-                        currentRole = new Farmer(rc);
+                        try {
+                            x = rc.readBroadcast(3);
+                            y = rc.readBroadcast(4);
+                            currentRole = new TowerBuilder(rc, x, y, RobotType.PASTR);
+                        } catch (Exception e) {
+                            System.err.println(e + " Tried to create pastrMaker. Failed.");
+                        }
                         break;
                     case 2:
-                        currentRole = new CattleDriver(rc);
+                        //Deprecated.
+                        currentRole = new Infantry(rc);
                         break;
                     case 3: case 4:
-                        currentRole = new Pirate(rc, mode - 3);
+                        currentRole = new Pirate(rc);
                         break;
                     case 5:
                         try {
                             x = rc.readBroadcast(3);
                             y = rc.readBroadcast(4);
-                            currentRole = new TowerBuilder(rc, x, y);
+                            currentRole = new TowerBuilder(rc, x, y, RobotType.NOISETOWER);
                         } catch (Exception e) {
-                            System.err.println(e + " Tried to create towerbuilder. Failed.");
+                            System.err.println(e + " Tried to create noisetowerMaker. Failed.");
                         }
                         break;
                 }
@@ -49,7 +56,7 @@ public class RobotPlayer {
                 currentRole = new NoiseTower(rc);
                 break;
             case PASTR:
-                //currentRole = new Pastr();
+                currentRole = new Pastr(rc);
                 break;
         }
     }

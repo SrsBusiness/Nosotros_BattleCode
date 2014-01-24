@@ -61,7 +61,7 @@ public class RobotPlayer {
         }
     }
 
-    public static void run(RobotController rc) {
+    public static void run(RobotController rc) throws GameActionException {
         //Initialize Role
         myType = rc.getType();
         int newMode;
@@ -71,22 +71,23 @@ public class RobotPlayer {
             //This should never happen. Be on the lookout.
             return;
         }
+        if (myType == RobotType.SOLDIER) {
+            rc.broadcast(0, rc.getRobot().getID());
+        }            
         while(true) {
             newMode = 0;
+            lifeTurn++;
             try {
                 //Only SOLDIERs recieve orders, for now.
                 if (myType == RobotType.SOLDIER) {
-                    //Poll for commands from the HQ
                     if (rc.readBroadcast(1) == rc.getRobot().getID()) {
+                        //Poll for commands from the HQ
                         newMode = rc.readBroadcast(2);
                         // Probably unnessesary clearing of channels
-                        rc.broadcast(1, 0); 
+                        rc.broadcast(1, 0);
                         rc.broadcast(2, 0);
                     }
-                    //Broadcast ID when spawned
-                    if (lifeTurn++ == 0) {
-                        rc.broadcast(0, rc.getRobot().getID());
-                    }
+
                     //When a different mode is broadcasted, change accordingly.
                     //OR, when the RobotType changes, change the role accordingly.
                     //TODO: bytecode optimize this.

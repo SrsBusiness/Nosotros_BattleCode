@@ -14,6 +14,7 @@ class Pirate extends Role {
     
     Pirate(RobotController rc) {
         super(rc);
+        rc.setIndicatorString(6, "I am pirate.");
     }
     void execute(){
         try {
@@ -47,13 +48,15 @@ class Pirate extends Role {
                     tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
                     return;
                 }
-                //Sniping PASTRs
-                if (enemyPastrs.length > 0) {
-                    mode = 3;
-                    target = enemyPastrs[0];
-                } else {
-                    mode = 1;
+                if (mode == 0) {
+                    //Sniping PASTRs
                     enemyPastrs = rc.sensePastrLocations(notMyTeam);
+                    if (enemyPastrs.length > 0) {
+                        target = enemyPastrs[0];
+                        mode = 3;
+                    } else {
+                        target = allyHQLocation;
+                    }
                 }
                 if (enemyRobotInfo.size() > 0) {
                     //Attacking, selecting the enemy with the lowest health.

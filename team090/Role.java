@@ -35,11 +35,12 @@ abstract class Role{
     MapLocation enemyHQLocation;
     Team myTeam;
     Team notMyTeam;
+    double pheromoneStrength = 0;
 
     int aggression;
 
     MapLocation target = null;
-    //Pheremone trail for pathfinding (private to each robot).
+    //Pheromone trail for pathfinding (private to each robot).
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
     //Run loop implementation for each role.
@@ -80,15 +81,17 @@ abstract class Role{
                    ArrayList<RobotInfo> enemyRobotInfo,
                    int mode) throws Exception {
         Vector North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest;
-        boolean isOnPheromone = false;
         Direction desiredDirection;
-
+        pheromoneStrength = 0;
+        /*
         for (MapLocation p: myTrail) {
-            if (src.equals(p)) {
-                isOnPheromone = true;
+            if (src.distanceSquaredTo(p) < 4) {
+                //GA TODO: ++ bad, += param good.
+                pheromoneStrength++;
             }
         }
-        if (isOnPheromone) {
+        */
+        if (pheromoneStrength > 0) {
             //TODO: Calculate min-force obstacle pathfinding.
             desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
         } else {
@@ -246,9 +249,11 @@ abstract class Role{
                 }
                 break;
             case 2:
+                //TODO: this is redundant with case(3) now.
                 //Go home to allied HQ.
                 enemyHQForce = new Vector();
-                allyHQForce = allyHQForce.logistic(3, 4, 0);
+                //GA TODO: parameter tweak to work well with the pheromone forces.
+                allyHQForce = allyHQForce.logistic(3, 2, 0);
                 break;
             case 3:
                 //Go to target mode.
@@ -267,36 +272,30 @@ abstract class Role{
                         switch (i.type) {
                             case SOLDIER: 
                                 count++;
-                                enemyForce.add(Vector.getForceVector(src, i.location));
+                                enemyForce.add(Vector.getForceVector(src, i.location).log(0, -1));
                                 break;
                         }
                     }
+                    //TODO: remove this scaling?
                     if (count > 0) {
                         //GA TODO: set scale factor.
                         enemyForce = enemyForce.scale(1.0/count);
                     }
                 }
-                enemyForce = enemyForce.log(0, -2);
-                //if (enemyForce.getMagnitudeSq() < 1) {
-                    enemyForce = new Vector();
-                //}
                 targetForce = Vector.getForceVector(src, target).logistic(-2, 2, 0);
+                if(src.distanceSquaredTo(target) < 4) {
+                    return targetForce;
+                }
                 break;
         }
         if (myTrail.size() > 0) {
             count = 0;
             for (MapLocation p: myTrail) {
-                if (src.equals(p)) {
-                    continue;
-                } else {
-                    count++;
-                    pheromoneForce.add(Vector.getForceVector(src,
-                                                             p).poly(0, 0, 1, 0, 0));
+                count++;
+                if (src.distanceSquaredTo(p) < 17) {
+                    //GA TODO: params pls.
+                    pheromoneForce.add(Vector.getForceVector(src, p).poly(0, 0, -3.4, 0.5, 0));
                 }
-            }
-            if (myTrail.size() > 0) {
-                //GA TODO: set scale factor.
-                pheromoneForce = pheromoneForce.scale(1.0/count);
             }
         }
         netForce.add(targetForce);
@@ -304,7 +303,7 @@ abstract class Role{
         netForce.add(enemyForce);
         netForce.add(allyHQForce);
         netForce.add(enemyHQForce);
-        //netForce.add(pheromoneForce);
+        netForce.add(pheromoneForce);
         return netForce;
     } 
     RobotInfo getWeakestTargetInRange(MapLocation src, ArrayList<RobotInfo> enemyRobotInfo) throws Exception {

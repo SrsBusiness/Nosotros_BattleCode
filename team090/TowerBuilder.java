@@ -10,7 +10,6 @@ class TowerBuilder extends Role{
     MapLocation myLocation;
     RobotType blueprints;
     MapLocation goal;
-    boolean gotToHQ = false;
 
     TowerBuilder(RobotController rc, int x, int y, RobotType structure) {
         super(rc);
@@ -18,6 +17,7 @@ class TowerBuilder extends Role{
         target = allyHQLocation;
         blueprints = structure;
         System.out.printf("Bonjour! My target: %d, %d\n", target.x, target.y);
+        rc.setIndicatorString(6, "I am builder.");
     }
     void execute() {
         try {
@@ -37,10 +37,11 @@ class TowerBuilder extends Role{
                 //Go to the target.
                 myLocation = rc.getLocation();
                 if (myLocation.distanceSquaredTo(allyHQLocation) < 36) {
-                    gotToHQ = true;
                     target = goal;
                 }
-                System.out.printf("I'm on it. Current : %d, %d\n", myLocation.x, myLocation.y);
+                System.out.printf("I'm on it. Current : %d, %d, Target: %d, %d\n",
+                                  myLocation.x, myLocation.y,
+                                  target.x, target.y);
                 tryToWalk(myLocation, null, enemyRobotInfo, 3);
                 return;
             }

@@ -33,13 +33,15 @@ abstract class Role{
     int mapHeight;     
     MapLocation allyHQLocation;
     MapLocation enemyHQLocation;
+    Direction enemyDir;
     Team myTeam;
     Team notMyTeam;
+    double pheromoneStrength = 0;
 
     int aggression;
 
     MapLocation target = null;
-    //Pheremone trail for pathfinding (private to each robot).
+    //Pheromone trail for pathfinding (private to each robot).
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
     //Run loop implementation for each role.
@@ -54,6 +56,7 @@ abstract class Role{
         mapHeight = rc.getMapHeight();
         allyHQLocation = rc.senseHQLocation();
         enemyHQLocation = rc.senseEnemyHQLocation();
+        enemyDir = allyHQLocation.directionTo(enemyHQLocation);
     }
 
     Direction getNextAdjacentEmptyLocation(MapLocation src, Direction initial) {
@@ -80,15 +83,17 @@ abstract class Role{
                    ArrayList<RobotInfo> enemyRobotInfo,
                    int mode) throws Exception {
         Vector North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest;
-        boolean isOnPheromone = false;
         Direction desiredDirection;
-
+        pheromoneStrength = 0;
+        /*
         for (MapLocation p: myTrail) {
-            if (src.equals(p)) {
-                isOnPheromone = true;
+            if (src.distanceSquaredTo(p) < 4) {
+                //GA TODO: ++ bad, += param good.
+                pheromoneStrength++;
             }
         }
-        if (isOnPheromone) {
+        */
+        if (pheromoneStrength > 0) {
             //TODO: Calculate min-force obstacle pathfinding.
             desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
         } else {
@@ -123,17 +128,17 @@ abstract class Role{
         if (rc.getHealth() <= 30) {
             return 10;
         }
-        int nearbyAllyCount = 0;
-        int nearbyEnemyCount = 0;
+        double nearbyAllyCount = 0;
+        double nearbyEnemyCount = 0;
         for (RobotInfo info: allyRobotInfo) {
             if (src.distanceSquaredTo(info.location) < 36) {
-                nearbyAllyCount++;
+                nearbyAllyCount += (info.health*info.health/10000.0);
             }
         }
         //TODO: see if this makes a difference.
         for (RobotInfo info: enemyRobotInfo) {
             if (src.distanceSquaredTo(info.location) < 36) {
-                nearbyEnemyCount++;
+                nearbyEnemyCount += (info.health*info.health/10000.0);
             }
         }
         if (nearbyAllyCount < nearbyEnemyCount ||
@@ -230,7 +235,7 @@ abstract class Role{
                         switch (i.type) {
                             case SOLDIER: 
                                 count++;
-                                allyForce.add(Vector.getForceVector(src, i.location));
+                                allyForce.add(Vector.getForceVector(src, i.location).logistic(-1, 2, 0));
                                 break;
                             case PASTR:
                                 break;
@@ -242,13 +247,14 @@ abstract class Role{
                         //GA TODO: Parameterize scale.
                         allyForce = allyForce.scale(1.0/count);
                     }
-                    allyForce.logistic(2, 2, 0);
                 }
                 break;
             case 2:
+                //TODO: this is redundant with case(3) now.
                 //Go home to allied HQ.
                 enemyHQForce = new Vector();
-                allyHQForce = allyHQForce.logistic(3, 4, 0);
+                //GA TODO: parameter tweak to work well with the pheromone forces.
+                allyHQForce = allyHQForce.logistic(3, 2, 0);
                 break;
             case 3:
                 //Go to target mode.
@@ -267,36 +273,30 @@ abstract class Role{
                         switch (i.type) {
                             case SOLDIER: 
                                 count++;
-                                enemyForce.add(Vector.getForceVector(src, i.location));
+                                enemyForce.add(Vector.getForceVector(src, i.location).log(0, -1));
                                 break;
                         }
                     }
+                    //TODO: remove this scaling?
                     if (count > 0) {
                         //GA TODO: set scale factor.
                         enemyForce = enemyForce.scale(1.0/count);
                     }
                 }
-                enemyForce = enemyForce.log(0, -2);
-                //if (enemyForce.getMagnitudeSq() < 1) {
-                    enemyForce = new Vector();
-                //}
                 targetForce = Vector.getForceVector(src, target).logistic(-2, 2, 0);
+                if(src.distanceSquaredTo(target) < 17) {
+                    return targetForce;
+                }
                 break;
         }
         if (myTrail.size() > 0) {
             count = 0;
             for (MapLocation p: myTrail) {
-                if (src.equals(p)) {
-                    continue;
-                } else {
-                    count++;
-                    pheromoneForce.add(Vector.getForceVector(src,
-                                                             p).poly(0, 0, 1, 0, 0));
+                count++;
+                if (src.distanceSquaredTo(p) < 17) {
+                    //GA TODO: params pls.
+                    pheromoneForce.add(Vector.getForceVector(src, p).poly(0, 0, -3.4, 0.5, 0));
                 }
-            }
-            if (myTrail.size() > 0) {
-                //GA TODO: set scale factor.
-                pheromoneForce = pheromoneForce.scale(1.0/count);
             }
         }
         netForce.add(targetForce);

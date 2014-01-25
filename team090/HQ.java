@@ -14,6 +14,7 @@ class HQ extends Role{
     MapLocation myLocation;
     Direction enemyDir;
     int broadcastIn;
+    MapLocation[] enemyPastrs = new MapLocation[0];
 
     HQ(RobotController rc){
         super(rc);
@@ -38,14 +39,15 @@ class HQ extends Role{
                 rc.broadcast(0, 0);
             }
             //GA TODO: set the PASTR construction time.
-            if (robotIDs.size() == 20 && farmer == 0) {
+            //paramaterize all these starting triggers.
+            if (robotIDs.size() == 21 && farmer == 0) {
                 farmer = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, farmer);
                 rc.broadcast(2, 1);
                 target = selectFarmLocation();
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
-            } else if (robotIDs.size() == 21 && noisetowerMaker == 0) {
+            } else if (robotIDs.size() == 22 && noisetowerMaker == 0) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
                 rc.broadcast(2, 5);
@@ -61,34 +63,38 @@ class HQ extends Role{
                 rc.broadcast(1, pirates[1]);
                 rc.broadcast(2, 4);
             }
-            
-            //Check if a robot is spawnable and spawn one if it is
-            if (rc.isActive() &&
-                rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
-                if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
-                    rc.spawn(enemyDir);
-                    return;
-                } else {
-                    Direction availDir = getNextAdjacentEmptyLocation(myLocation, enemyDir);
-                    if (availDir != Direction.NONE) {
-                        rc.spawn(availDir);
-                        return;
+            enemyPastrs = rc.sensePastrLocations(notMyTeam);
+            if (enemyPastrs.length >= 2) {
+                //If there are 2 or more PASTRS, start a-moving.
+                rc.broadcast(1, -1);
+                rc.broadcast(2, 4);
+            }
+            Robot[] nearbyEnemyRobots = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
+            if (nearbyEnemyRobots.length == 0) {
+                //Check if a robot is spawnable and spawn one if it is
+                if (rc.isActive() &&
+                    rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
+                    if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
+                        rc.spawn(enemyDir);
+                    } else {
+                        Direction availDir = getNextAdjacentEmptyLocation(myLocation, enemyDir);
+                        if (availDir != Direction.NONE) {
+                            rc.spawn(availDir);
+                        }
                     }
                 }
-            }
-
-            Robot[] nearbyEnemyRobots = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
-            ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
-            //Populate the knowledge of nearby enemy robots.
-            for (Robot r: nearbyEnemyRobots) {
-                enemyRobotInfo.add(rc.senseRobotInfo(r));
-            }
-            //Attack nearby enemies (range^2 = 15).
-            if(enemyRobotInfo.size() > 0) {
-                RobotInfo target = getWeakestTargetInRange(allyHQLocation, enemyRobotInfo);
-                if (target != null) {
-                    rc.attackSquare(target.location);
-                    return;
+            } else {
+                ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
+                //Populate the knowledge of nearby enemy robots.
+                for (Robot r: nearbyEnemyRobots) {
+                    enemyRobotInfo.add(rc.senseRobotInfo(r));
+                }
+                //Attack nearby enemies (range^2 = 15).
+                if(enemyRobotInfo.size() > 0) {
+                    RobotInfo target = getWeakestTargetInRange(allyHQLocation, enemyRobotInfo);
+                    if (target != null) {
+                        rc.attackSquare(target.location);
+                    }
                 }
             }
         } catch (Exception e) {

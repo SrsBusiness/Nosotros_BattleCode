@@ -38,7 +38,8 @@ class Infantry extends Role{
                 if (fear == 0 && rc.getHealth() > 70) {
                     mode = 0;
                 } else if (fear == 10) {
-                    mode = 2;
+                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                    mode = 3;
                 } else if (fear > 0) {
                     mode = 1;
                 } 

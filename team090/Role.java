@@ -34,6 +34,7 @@ abstract class Role{
     int mapHeight;     
     MapLocation allyHQLocation;
     MapLocation enemyHQLocation;
+    Direction enemyDir;
     Team myTeam;
     Team notMyTeam;
     double pheromoneStrength = 0;
@@ -178,6 +179,7 @@ abstract class Role{
         mapHeight = rc.getMapHeight();
         allyHQLocation = rc.senseHQLocation();
         enemyHQLocation = rc.senseEnemyHQLocation();
+        enemyDir = allyHQLocation.directionTo(enemyHQLocation);
     }
 
     Direction getNextAdjacentEmptyLocation(MapLocation src, Direction initial) {
@@ -249,17 +251,17 @@ abstract class Role{
         if (rc.getHealth() <= 30) {
             return 10;
         }
-        int nearbyAllyCount = 0;
-        int nearbyEnemyCount = 0;
+        double nearbyAllyCount = 0;
+        double nearbyEnemyCount = 0;
         for (RobotInfo info: allyRobotInfo) {
             if (src.distanceSquaredTo(info.location) < 36) {
-                nearbyAllyCount++;
+                nearbyAllyCount += (info.health*info.health/10000.0);
             }
         }
         //TODO: see if this makes a difference.
         for (RobotInfo info: enemyRobotInfo) {
             if (src.distanceSquaredTo(info.location) < 36) {
-                nearbyEnemyCount++;
+                nearbyEnemyCount += (info.health*info.health/10000.0);
             }
         }
         if (nearbyAllyCount < nearbyEnemyCount ||
@@ -356,7 +358,7 @@ abstract class Role{
                         switch (i.type) {
                             case SOLDIER: 
                                 count++;
-                                allyForce.add(Vector.getForceVector(src, i.location));
+                                allyForce.add(Vector.getForceVector(src, i.location).logistic(-1, 2, 0));
                                 break;
                             case PASTR:
                                 break;
@@ -368,7 +370,6 @@ abstract class Role{
                         //GA TODO: Parameterize scale.
                         allyForce = allyForce.scale(1.0/count);
                     }
-                    allyForce.logistic(2, 2, 0);
                 }
                 break;
             case 2:
@@ -406,7 +407,7 @@ abstract class Role{
                     }
                 }
                 targetForce = Vector.getForceVector(src, target).logistic(-2, 2, 0);
-                if(src.distanceSquaredTo(target) < 4) {
+                if(src.distanceSquaredTo(target) < 17) {
                     return targetForce;
                 }
                 break;
@@ -426,7 +427,7 @@ abstract class Role{
         netForce.add(enemyForce);
         netForce.add(allyHQForce);
         netForce.add(enemyHQForce);
-        netForce.add(pheromoneForce);
+        //netForce.add(pheromoneForce);
         return netForce;
     } 
     RobotInfo getWeakestTargetInRange(MapLocation src, ArrayList<RobotInfo> enemyRobotInfo) throws Exception {

@@ -8,7 +8,7 @@ import java.util.*;
 
 class Infantry extends Role{
     int mode = 0;    
-    int range = 4;
+    double range = 4;
     double advantage = 0;
     MapLocation myLocation;
     boolean offensive = false;
@@ -20,13 +20,6 @@ class Infantry extends Role{
     void execute(){
         try {
             if(rc.isActive()) {
-                if (Clock.getRoundNum() == 1999) {
-                    double myMilk = rc.senseTeamMilkQuantity(myTeam);
-                    double enemyMilk = rc.senseTeamMilkQuantity(notMyTeam);
-                    if ((enemyMilk - myMilk) < GameConstants.HAT_MILK_COST + 5000) {
-                        rc.wearHat();
-                    }
-                }
                 Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class);
                 ArrayList<RobotInfo> allyRobotInfo = new ArrayList<RobotInfo>();
                 ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
@@ -64,6 +57,11 @@ class Infantry extends Role{
                     mode = 1;
                     range = 0;
                     target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                } else if (advantage == 0) {
+                    //Cold war tactics
+                    mode = 5;
+                    range = 3.163;
+                    target = myLocation;
                 } else if (advantage < 0) {
                     //In a disadvantage, run back to base.
                     //mode = 0;
@@ -85,32 +83,6 @@ class Infantry extends Role{
                 }
 //                System.out.printf("%d: Mode: %d, advantage: %f, HP: %f\n",
 //                        Clock.getRoundNum(), mode, advantage, health);
-                /*
-                if (fear == 0 && rc.getHealth() > 70) {
-                    mode = 0;
-                } else if (fear == 10) {
-                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                    mode = 3;
-                } else if (fear > 0) {
-                    mode = 1;
-                } 
-                if (fear > 4) {
-                    myLocation = rc.getLocation(); //JUST IN CASE PLS
-                    tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
-                    return;
-                } else if (enemyRobotInfo.size() > 0) {
-                    //Attacking, selecting the enemy with the lowest health.
-                    RobotInfo attackTarget = getWeakestTargetInRange(myLocation,
-                                                                     enemyRobotInfo);
-                    if (attackTarget != null) {
-                        rc.attackSquare(attackTarget.location);
-                        return;
-                    }
-                }
-                if (allyRobotInfo.size() < 3) {
-                    mode = 1;
-                }
-                */
                 if (mode == 0 || mode == 1) {
                     //If in an aggressive mode, attack if possible.
                     if (enemyRobotInfo.size() > 0) {

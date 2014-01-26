@@ -37,20 +37,24 @@ abstract class Role{
     Direction enemyDir;
     Team myTeam;
     Team notMyTeam;
-    double pheromoneStrength = 0;
     double health;
+    int failCount = 0;
 
     MapLocation target = null;
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
     LinkedList<MapLocation> wayPoints;
+    int pathProgress = 0;
+    MapLocation pathSetTo = null;
+    //NOTE: Unreliable
     MapLocation myLocation;
     int keepaliveChannel = -1;
 
     abstract void execute(); 
 
-    boolean findPath(RobotController rc, MapLocation dest){ // A* algorithm, sets up waypoints
-        // if path found, returns true, else returns false.
+    // A* algorithm, sets up waypoints
+    // If path found, returns true, else returns false.
+    boolean findPath(MapLocation src, MapLocation dest){ 
         class QEntry{
             QEntry(MapLocation loc, double fScore){
                 this.loc = loc;
@@ -67,12 +71,12 @@ abstract class Role{
         });
         HashSet<MapLocation> toEvalSet = new HashSet<MapLocation>();
         //HashSet<MapLocation> toEvaluate = new HashSet<MapLocation>();
-        //toEvaluate.add(myLocation);
+        //toEvaluate.add(src);
         HashMap<MapLocation, MapLocation> cameFrom = new HashMap<MapLocation, MapLocation>();
         HashMap<MapLocation, Double> gScore = new HashMap<MapLocation, Double>();
-        gScore.put(myLocation, 0.0);
-        toEvaluate.add(new QEntry(myLocation, 0.0)); // first node shouldn't need a heuristic
-        toEvalSet.add(myLocation);
+        gScore.put(src, 0.0);
+        toEvaluate.add(new QEntry(src, 0.0)); // first node shouldn't need a heuristic
+        toEvalSet.add(src);
         MapLocation current;
         while(toEvaluate.size() > 0){
             current = toEvaluate.poll().loc;
@@ -160,14 +164,16 @@ abstract class Role{
 
         for (RobotInfo info: allyRobotInfo) {
             //GA TODO: paramize. (5)
-            if (info.location.distanceSquaredTo(src) < 36) {
+            if (info.location.distanceSquaredTo(src) < 36 &&
+                info.type != RobotType.HQ) {
                 nearbyAllyCount++;
                 //Weigh high health units much higher.
                 nearbyAllyAggregateHealth += info.health*info.health;
             }
         }
         for (RobotInfo info: enemyRobotInfo) {
-            if (info.location.distanceSquaredTo(src) < 36) {
+            if (info.location.distanceSquaredTo(src) < 36 &&
+                info.type != RobotType.HQ) {
                 nearbyEnemyCount++;
                 //Weigh high health units much higher.
                 nearbyEnemyAggregateHealth += info.health*info.health;
@@ -262,13 +268,14 @@ abstract class Role{
     }
     //Vector Field Flee//
     //Runs to target if no enemies are in sight.
+    //NOTE: requires target to be set.
     Vector VFflee(MapLocation src,
                   ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
         Vector netForce = new Vector();
         Vector enemyForce = new Vector();
         //GA TODO: parameterize.
         Vector targetForce = Vector.getForceVector(src,
-                target).logistic(3, 1, 1);
+                target).logistic(3, 0.7, 1);
 
         //count = 0;
         for (RobotInfo info: enemyRobotInfo) {
@@ -276,7 +283,7 @@ abstract class Role{
                 if (info.type == RobotType.SOLDIER) {
                     //      count++;
                     enemyForce.add(Vector.getForceVector(src,
-                                info.location).inv(-2, 0, -1));
+                                info.location).log(-1, -4));
                 }
             }
         }
@@ -295,7 +302,7 @@ abstract class Role{
                 //count++;
                 //GA TODO: params pls.
                 pheromoneForce.add(Vector.getForceVector(src,
-                            pheromone).inv(-3.4, 0.5, 0));
+                            pheromone).inv(-3, 0.5, -1));
             }
         }
         return pheromoneForce;
@@ -306,15 +313,48 @@ abstract class Role{
                  int mode,
                  //Param is range for VFcharge, ignored if mode != 0
                  double param) throws Exception {
+        
         Vector force = new Vector();
         Direction desiredDirection;
-        boolean onPheromone = false;
-        for (MapLocation pheromone: myTrail)
-            if (pheromone.equals(src))
-                onPheromone = true;
-      //while (rc.getActionDelay() > 1) {
-      //    rc.yield();
-      //}
+        boolean nearWall = false;
+        /*
+        //Don't do anything if everything is okay.
+        if (src.equals(target)) {
+            if (pathSetTo != null &&
+                pathSetTo.equals(target)) {
+                pathSetTo = null;
+            }
+            if (failCount > 0) {
+                pathProgress += 5;
+                failCount = 0;
+            } else {
+                return;
+            }
+        }
+        */
+        for (MapLocation pheromone: myTrail) {
+            if (src.equals(pheromone)) {
+                failCount++;
+                break;
+            }
+        }
+        //Use pheremones if touching a wall.
+        if (rc.senseTerrainTile(src.add(Direction.NORTH)).ordinal() > 1 ||
+            rc.senseTerrainTile(src.add(Direction.WEST)).ordinal() > 1 ||
+            rc.senseTerrainTile(src.add(Direction.SOUTH)).ordinal() > 1 ||
+            rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1)
+            nearWall = true;
+        /*
+        if (failCount > 7 &&
+            src.distanceSquaredTo(target) > 36) {
+            if (pathSetTo != null) {
+                findPath(src, target);
+                pathSetTo = target;
+                pathProgress = 0;
+            }
+            target = wayPoints.get(pathProgress);
+        }
+        */
         switch (mode) {
             case 0:
                 force = VFcharge(src, allyRobotInfo, enemyRobotInfo, param);
@@ -330,6 +370,9 @@ abstract class Role{
                 force = VFflee(src, enemyRobotInfo);
                 break;
         }
+        if (nearWall) {
+            force.add(getPheremoneForce(src));
+        }
         desiredDirection = force.toDirectionEnum();
         if (rc.canMove(desiredDirection)) {
             rc.move(desiredDirection);
@@ -344,7 +387,7 @@ abstract class Role{
         //Lay down pheromone trail.
         myTrail.offer(src);
         //GA TODO: parameterize the trail size.
-        if (myTrail.size() > 4) {
+        if (myTrail.size() >= 5) {
             myTrail.remove();
         }
     }

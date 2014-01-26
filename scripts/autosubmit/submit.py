@@ -9,9 +9,12 @@ if __name__ == "__main__":
     print "Battlecode.org login"
     uname = raw_input("Username: ")
     pword = getpass("Password: ")
-    s.post("https://www.battlecode.org/contestants/login/",
+    result = s.post("https://www.battlecode.org/contestants/login/",
            {'username': uname,
-            'password': pword})
+            'password': pword}).content
+    if re.findall("Welcome back", result) < 1:
+        print "Failed logging in."
+        exit()
     projectDir = ''
     if "RobotPlayer.java" in os.listdir('.'):
         projectDir = '.'

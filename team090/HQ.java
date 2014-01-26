@@ -15,6 +15,9 @@ class HQ extends Role{
     Direction enemyDir;
     int broadcastIn;
     MapLocation[] enemyPastrs = new MapLocation[0];
+    double [][] cowRates = null;
+    MapLocation optimalFarm = null;
+    MapLocation optimalTower = null;
 
     HQ(RobotController rc){
         super(rc);
@@ -22,13 +25,86 @@ class HQ extends Role{
         enemyDir = myLocation.directionTo(enemyHQLocation);
     }
 
+    void getOptimalFarmLocation() {
+        int dx = enemyHQLocation.x - allyHQLocation.x;
+        int dy = enemyHQLocation.y - allyHQLocation.y;
+        MapLocation quadrant;
+        int fdx, fdy;
+        if (dx > dy) { // Split horizontally
+            if (dx < 0) { // HQ on right half
+                if (allyHQLocation.y < mapHeight/2) {
+                    quadrant = new MapLocation(mapWidth/2, mapHeight/2); // HQ on top half
+                    fdx = 1; fdy = 1;
+                } else {
+                    quadrant = new MapLocation(mapWidth/2, 0); // HQ on bottom half
+                    fdx = 1; fdy = -1;
+                }
+            } else { // HQ on left half
+                if (allyHQLocation.y < mapHeight/2) {
+                    quadrant = new MapLocation(0, mapHeight/2); // HQ on top half
+                    fdx = -1; fdy = 1;
+                } else {
+                    quadrant = new MapLocation(0, 0); // HQ on bottom half
+                    fdx = -1; fdy = -1;
+                }
+            }
+        } else { // Split vertically
+            if (dy < 0) { // HQ on bottom half
+                if (allyHQLocation.x < mapWidth/2) {
+                    quadrant = new MapLocation(mapWidth/2, mapHeight/2); // HQ on left half
+                    fdx = 1; fdy = 1;
+                } else {
+                    quadrant = new MapLocation(0, mapHeight/2); // HQ on right half
+                    fdx = -1; fdy = 1;
+                }
+            } else { // HQ on top half
+                if (allyHQLocation.x < mapWidth/2) {
+                    quadrant = new MapLocation(mapWidth/2, 0); // HQ on left half
+                    fdx = 1; fdy = -1;
+                } else {
+                    quadrant = new MapLocation(0, 0); // HQ on right half
+                    fdx = -1; fdy = -1;
+                }
+            }
+        }
+        MapLocation testLoc;
+        MapLocation bestLoc = quadrant;
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (int cx = 1; cx < mapWidth/4 - 1; cx++) {
+            for (int cy = 1; cy < mapHeight/4 - 1; cy++) {
+                testLoc = quadrant.add(cx, cy);
+                if (cowRates[testLoc.y][testLoc.x] != 0
+                    && cowRates[testLoc.y+fdx][testLoc.x+fdy] != 0)
+                {
+                    double score = 0;
+                    for (int x = 0; x < 9; x++) {
+                        for (int y = 0; y < 9; y++) {
+                            score += cowRates[testLoc.y+y][testLoc.x+x];
+                        }
+                    }
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestLoc = testLoc;
+                    }
+                }
+            }
+        }
+        optimalTower = bestLoc;
+        optimalFarm = bestLoc.add(fdx, fdy);            
+    }
     MapLocation selectFarmLocation() {
-        target = corners()[1];
-        return target;
+        if (optimalFarm != null) {
+            return optimalFarm;
+        } else {
+            return allyHQLocation;
+        }
     }
     MapLocation selectNoiseTowerLocation() {
-        target = corners()[1].add(0, 1);
-        return target;
+        if (optimalTower != null) {
+            return optimalTower;
+        } else {
+            return allyHQLocation;
+        }
     }
     boolean getUnitTypeStatus(int type) {
         try {
@@ -48,20 +124,20 @@ class HQ extends Role{
             }
             //GA TODO: set the PASTR construction time.
             //paramaterize all these starting triggers.
-            if ((robotIDs.size() >= 11 && farmer == 0)
-                || (farmer != 0 && getUnitTypeStatus(6) == false)) {
-                farmer = robotIDs.get(robotIDs.size()-1);
-                rc.broadcast(1, farmer);
-                rc.broadcast(2, 1);
-                target = selectFarmLocation();
-                rc.broadcast(3, target.x);
-                rc.broadcast(4, target.y);
-            } else if ((robotIDs.size() >= 12 && noisetowerMaker == 0)
+            if ((robotIDs.size() >= 10 && noisetowerMaker == 0)
                       || (noisetowerMaker != 0 && getUnitTypeStatus(7) == false)) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
                 rc.broadcast(2, 5);
                 target = selectNoiseTowerLocation();
+                rc.broadcast(3, target.x);
+                rc.broadcast(4, target.y);
+            } else if ((robotIDs.size() >= 11 && farmer == 0)
+                || (farmer != 0 && getUnitTypeStatus(6) == false)) {
+                farmer = robotIDs.get(robotIDs.size()-1);
+                rc.broadcast(1, farmer);
+                rc.broadcast(2, 1);
+                target = selectFarmLocation();
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
             } else if (robotIDs.size() == 8 && pirates[0] == 0) {
@@ -107,6 +183,10 @@ class HQ extends Role{
                         rc.attackSquare(target.location);
                     }
                 }
+            }
+            if (cowRates == null) {
+                cowRates = rc.senseCowGrowth();
+                getOptimalFarmLocation();
             }
         } catch (Exception e) {
             System.err.println(e.toString() + " HQ Exception\n");

@@ -15,6 +15,9 @@ class HQ extends Role{
     Direction enemyDir;
     int broadcastIn;
     MapLocation[] enemyPastrs = new MapLocation[0];
+    double [][] initialCowDensity = null;
+    MapLocation optimalFarm = null;
+    MapLocation optimalTower = null;
 
     HQ(RobotController rc){
         super(rc);
@@ -22,13 +25,97 @@ class HQ extends Role{
         enemyDir = myLocation.directionTo(enemyHQLocation);
     }
 
+    void senseTerrainCows() {
+        for (int x = 0; x < mapWidth; x++) {
+            for (int y = 0; y < mapHeight; y++) {
+                if (rc.senseTerrainTile(new MapLocation(x, y)) == TerrainTile.VOID) {
+                    initialCowDensity[y][x] -= 100.0;
+                }
+            }
+        }
+    }
+    double getCowPotential(MapLocation center) {
+        MapLocation squares[] = MapLocation.getAllMapLocationsWithinRadiusSq(center, 300);
+        double score = 0;
+        for (MapLocation s : squares) {
+            if (s.y >= 0 && s.y < mapHeight && s.x >= 0 && s.x < mapWidth) {
+                double dist = Math.pow(center.x - s.x, 2)+Math.pow(center.y - s.y, 2);
+                score += initialCowDensity[s.y][s.x]/dist;
+            }
+        }
+        return score;
+    }
+    void getOptimalFarmLocation() {
+        int dx = enemyHQLocation.x - allyHQLocation.x;
+        int dy = enemyHQLocation.y - allyHQLocation.y;
+        MapLocation quadrant;
+        int fdx, fdy;
+        if (dx > dy) {
+            if (dx < 0) {
+                if (allyHQLocation.y < mapHeight/2) {
+                    quadrant = new MapLocation(0, mapHeight/2);
+                    fdx = -1;
+                    fdy = 1;
+                } else {
+                    quadrant = new MapLocation(0, 0);
+                    fdx = -1;
+                    fdy = -1;
+                }
+            } else {
+                if (allyHQLocation.y < mapHeight/2) {
+                    quadrant = new MapLocation(mapWidth/2, mapHeight/2);
+                    fdx = 1;
+                    fdy = 1;
+                } else {
+                    quadrant = new MapLocation(mapWidth/2, 0);
+                    fdx = 1;
+                    fdy = -1;
+                }
+            }
+        } else {
+            if (dy < 0) {
+                if (allyHQLocation.x < mapWidth/2) {
+                    quadrant = new MapLocation(mapWidth/2, 0);
+                    fdx = 1;
+                    fdy = -1;
+                } else {
+                    quadrant = new MapLocation(0, 0);
+                    fdx = -1;
+                    fdy = -1;
+                }
+            } else {
+                if (allyHQLocation.x < mapWidth/2) {
+                    quadrant = new MapLocation(mapWidth/2, mapHeight/2);
+                    fdx = 1;
+                    fdy = 1;
+                } else {
+                    quadrant = new MapLocation(0, mapHeight/2);
+                    fdx = -1;
+                    fdy = 1;
+                }
+            }
+        }
+        MapLocation testLocation;
+        MapLocation bestLocation = quadrant;
+        double bestScore = 0.0;
+        for (int x = 0; x < mapWidth/4; x += 18) {
+            for (int y = 0; y < mapHeight/4; y += 18) {
+                testLocation = quadrant.add(x, y);
+                double score = getCowPotential(testLocation);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestLocation = testLocation;
+                }
+            }
+        }
+        optimalTower = bestLocation;
+        optimalFarm = bestLocation.add(fdx, fdy);
+    }
     MapLocation selectFarmLocation() {
-        target = corners()[1];
-        return target;
+        return optimalFarm;
     }
     MapLocation selectNoiseTowerLocation() {
-        target = corners()[1].add(0, 1);
-        return target;
+        return optimalTower;
     }
     boolean getUnitTypeStatus(int type) {
         try {
@@ -106,6 +193,11 @@ class HQ extends Role{
                         rc.attackSquare(target.location);
                     }
                 }
+            }
+            if (initialCowDensity == null) {
+                initialCowDensity = rc.senseCowGrowth();
+                senseTerrainCows();
+                getOptimalFarmLocation();
             }
         } catch (Exception e) {
             System.err.println(e.toString() + " HQ Exception\n");

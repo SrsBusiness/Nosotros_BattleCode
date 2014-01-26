@@ -35,9 +35,11 @@ class HQ extends Role{
         }
     }
     double getCowPotential(MapLocation center) {
+        if (rc.senseTerrainTile(center) == TerrainTile.VOID) return Double.NEGATIVE_INFINITY;
         MapLocation squares[] = MapLocation.getAllMapLocationsWithinRadiusSq(center, 300);
         double score = 0;
         for (MapLocation s : squares) {
+            if (s.x == center.x && s.y == center.y) continue;
             if (s.y >= 0 && s.y < mapHeight && s.x >= 0 && s.x < mapWidth) {
                 double dist = Math.pow(center.x - s.x, 2)+Math.pow(center.y - s.y, 2);
                 score += initialCowDensity[s.y][s.x]/dist;
@@ -75,16 +77,6 @@ class HQ extends Role{
         } else {
             if (dy < 0) {
                 if (allyHQLocation.x < mapWidth/2) {
-                    quadrant = new MapLocation(mapWidth/2, 0);
-                    fdx = 1;
-                    fdy = -1;
-                } else {
-                    quadrant = new MapLocation(0, 0);
-                    fdx = -1;
-                    fdy = -1;
-                }
-            } else {
-                if (allyHQLocation.x < mapWidth/2) {
                     quadrant = new MapLocation(mapWidth/2, mapHeight/2);
                     fdx = 1;
                     fdy = 1;
@@ -93,29 +85,50 @@ class HQ extends Role{
                     fdx = -1;
                     fdy = 1;
                 }
+            } else {
+                if (allyHQLocation.x < mapWidth/2) {
+                    quadrant = new MapLocation(mapWidth/2, 0);
+                    fdx = 1;
+                    fdy = -1;
+                } else {
+                    quadrant = new MapLocation(0, 0);
+                    fdx = -1;
+                    fdy = -1;
+                }
             }
         }
         MapLocation testLocation;
         MapLocation bestLocation = quadrant;
-        double bestScore = 0.0;
-        for (int x = 0; x < mapWidth/4; x += 18) {
-            for (int y = 0; y < mapHeight/4; y += 18) {
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (int x = 0; x < mapWidth/4; x += 3) {
+            for (int y = 0; y < mapHeight/4; y += 3) {
                 testLocation = quadrant.add(x, y);
-                double score = getCowPotential(testLocation);
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestLocation = testLocation;
+                TerrainTile testTile = rc.senseTerrainTile(testLocation.add(fdx, fdy));
+                if (testTile != TerrainTile.VOID && testTile != TerrainTile.OFF_MAP) {
+                    double score = getCowPotential(testLocation);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestLocation = testLocation;
+                    }
                 }
             }
         }
         optimalTower = bestLocation;
-        optimalFarm = bestLocation.add(fdx, fdy);
+        optimalFarm = bestLocation.add(fdx, fdy);            
     }
     MapLocation selectFarmLocation() {
-        return optimalFarm;
+        if (optimalFarm != null) {
+            return optimalFarm;
+        } else {
+            return allyHQLocation;
+        }
     }
     MapLocation selectNoiseTowerLocation() {
-        return optimalTower;
+        if (optimalTower != null) {
+            return optimalTower;
+        } else {
+            return allyHQLocation;
+        }
     }
     boolean getUnitTypeStatus(int type) {
         try {

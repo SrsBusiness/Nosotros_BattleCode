@@ -23,7 +23,7 @@ class Infantry extends Role{
                 if (Clock.getRoundNum() == 1999) {
                     double myMilk = rc.senseTeamMilkQuantity(myTeam);
                     double enemyMilk = rc.senseTeamMilkQuantity(notMyTeam);
-                    if ((enemyMilk - myMilk) < GameConstants.HAT_MILK_COST + 5000) {
+                    if ((myMilk - enemyMilk) > GameConstants.HAT_MILK_COST + 5000) {
                         rc.wearHat();
                     }
                 }

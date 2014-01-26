@@ -8,8 +8,10 @@ import java.util.*;
 
 class Infantry extends Role{
     int mode = 0;    
-    double fear = 0;
+    int range = 4;
+    double advantage = 0;
     MapLocation myLocation;
+    boolean offensive = false;
     
     Infantry(RobotController rc) {
         super(rc);
@@ -40,8 +42,50 @@ class Infantry extends Role{
                 }
                 //Set current location
                 myLocation = rc.getLocation();
-                fear = howScared(myLocation, allyRobotInfo, enemyRobotInfo);
-                //GA TODO: parameterize the health threshold.
+                health = rc.getHealth();
+                advantage = calculateAdvantage(myLocation, allyRobotInfo, enemyRobotInfo);
+                int nearbyAllyCount = 0;
+                for (RobotInfo i: allyRobotInfo) {
+                    //GA TODO: parameterize the distance.
+                    if (i.location.distanceSquaredTo(myLocation) < 16) {
+                        nearbyAllyCount++;
+                        if (nearbyAllyCount >= 3)
+                            break;
+                    }
+                }
+                //Mode selection
+                if (health <= 30) {
+                    //Always flee if on low health.
+                    mode = 2;
+                    range = 0;
+                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                } else if (allyRobotInfo.size() < 3) {
+                    //Never solo. Wait at the base to regroup if stranded.
+                    mode = 1;
+                    range = 0;
+                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                } else if (advantage < 0) {
+                    //In a disadvantage, run back to base.
+                    //mode = 0;
+                    //range = 3;
+                    //In a disadvantage, flee back to base.
+                    mode = 2;
+                    range = 0;
+                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                }/* else if (advantage > 20000) {
+                        mode = 3;
+                        range = 0;
+                        target = allyHQLocation;
+                    }*/
+                else {
+                    //By default, charge to their base.
+                    mode = 0;
+                    range = 7;
+                    target = enemyHQLocation;
+                }
+//                System.out.printf("%d: Mode: %d, advantage: %f, HP: %f\n",
+//                        Clock.getRoundNum(), mode, advantage, health);
+                /*
                 if (fear == 0 && rc.getHealth() > 70) {
                     mode = 0;
                 } else if (fear == 10) {
@@ -66,9 +110,21 @@ class Infantry extends Role{
                 if (allyRobotInfo.size() < 3) {
                     mode = 1;
                 }
-                //Moving, using potential field.
-                myLocation = rc.getLocation(); //JUST IN CASE PLS
-                tryToWalk(myLocation, allyRobotInfo, enemyRobotInfo, mode);
+                */
+                if (mode == 0 || mode == 1) {
+                    //If in an aggressive mode, attack if possible.
+                    if (enemyRobotInfo.size() > 0) {
+                        //Attacking, selecting the enemy with the lowest health.
+                        RobotInfo attackTarget = bestTargetInRange(myLocation,
+                                enemyRobotInfo);
+                        if (attackTarget != null) {
+                            rc.attackSquare(attackTarget.location);
+                            return;
+                        }
+                    }
+                }
+                //Moving, using vector field.
+                tryMove(myLocation, allyRobotInfo, enemyRobotInfo, mode, range);
             }
         } catch(Exception e) {
             e.printStackTrace();

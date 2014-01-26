@@ -60,19 +60,31 @@ public class Vector {
     public Vector scale(double s) {
         return new Vector(x*s, y*s);
     }
+    public Vector step(double discontinuity, double amplitude, double yShift) {
+        if (this.getMagnitude() < discontinuity) {
+            return this.getUnitVector().scale(yShift-amplitude);
+        } else {
+            return this.getUnitVector().scale(yShift+amplitude);
+        }
+    }
+    public Vector inv(double c0, double c1,
+                      double c2) {
+        double r = this.getMagnitude();
+        return this.getUnitVector().scale(c0/(r-c1)+c2);
+    }
     public Vector poly(double c0, double c1,
                        double c2, double c3,
                        double c4) {
-        double r = getMagnitude();
-        return this.scale(c0*(r-c1)+c2/(r-c3)+c4);
+        double r = this.getMagnitude();
+        return this.getUnitVector().scale(c0*(r-c1)+c2/(r-c3)+c4);
     }
     public Vector poly(double c0, double c1,
                        double c2, double c3,
                        double c4, double c5,
                        double c6, double c7,
                        double c8) {
-        double r = getMagnitude();
-        return scale(c0*(r-c1)*(r-c1)+c2*(r-c3)+c4/(r-c5)+c6/((r-c7)*(r-c7))+c8);
+        double r = this.getMagnitude();
+        return this.getUnitVector().scale(c0*(r-c1)*(r-c1)+c2*(r-c3)+c4/(r-c5)+c6/((r-c7)*(r-c7))+c8);
     }
     public Vector log(double root, double amplitude) {
         double r = getMagnitude();
@@ -83,7 +95,7 @@ public class Vector {
         }
     }
     public Vector logistic(double root, double amplitude, double yShift) {
-        return scale(amplitude*2/(1+(Math.pow(Math.E, (root-Math.pow(magnitudeSq, 0.5))))) - amplitude + yShift);
+        return scale(amplitude*2/(1+(Math.pow(Math.E, root-Math.pow(magnitudeSq, 0.5)))) - amplitude + yShift);
     }
     //Return battlecode direction
     public Direction toDirectionEnum() {

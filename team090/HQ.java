@@ -135,7 +135,7 @@ class HQ extends Role{
             }
             //GA TODO: set the PASTR construction time.
             //paramaterize all these starting triggers.
-            if ((robotIDs.size() >= 21 && farmer == 0)
+            if ((robotIDs.size() >= 11 && farmer == 0)
                 || (farmer != 0 && getUnitTypeStatus(6) == false)) {
                 farmer = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, farmer);
@@ -143,7 +143,7 @@ class HQ extends Role{
                 target = selectFarmLocation();
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
-            } else if ((robotIDs.size() >= 22 && noisetowerMaker == 0)
+            } else if ((robotIDs.size() >= 12 && noisetowerMaker == 0)
                       || (noisetowerMaker != 0 && getUnitTypeStatus(7) == false)) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
@@ -152,13 +152,13 @@ class HQ extends Role{
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
             } else if (robotIDs.size() == 8 && pirates[0] == 0) {
-                pirates[0] = robotIDs.get(robotIDs.size() - 1);
-                rc.broadcast(1, pirates[0]);
-                rc.broadcast(2, 3);
-            } else if (robotIDs.size() == 9 && pirates[1] == 0) {
-                pirates[1] = robotIDs.get(robotIDs.size() - 1);
-                rc.broadcast(1, pirates[1]);
-                rc.broadcast(2, 4);
+            //  pirates[0] = robotIDs.get(robotIDs.size() - 1);
+            //  rc.broadcast(1, pirates[0]);
+            //  rc.broadcast(2, 3);
+            //} else if (robotIDs.size() == 9 && pirates[1] == 0) {
+            //  pirates[1] = robotIDs.get(robotIDs.size() - 1);
+            //  rc.broadcast(1, pirates[1]);
+            //  rc.broadcast(2, 4);
             }
             enemyPastrs = rc.sensePastrLocations(notMyTeam);
             if (enemyPastrs.length >= 2) {
@@ -166,6 +166,7 @@ class HQ extends Role{
                 rc.broadcast(1, -1);
                 rc.broadcast(2, 4);
             }
+            //Only spawn if there are no robots in attack range.
             Robot[] nearbyEnemyRobots = rc.senseNearbyGameObjects(Robot.class, 15, rc.getTeam().opponent());
             if (nearbyEnemyRobots.length == 0) {
                 //Check if a robot is spawnable and spawn one if it is
@@ -174,7 +175,7 @@ class HQ extends Role{
                     if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
                         rc.spawn(enemyDir);
                     } else {
-                        Direction availDir = getNextAdjacentEmptyLocation(myLocation, enemyDir);
+                        Direction availDir = nextAdjacentEmptyLocation(myLocation, enemyDir);
                         if (availDir != Direction.NONE) {
                             rc.spawn(availDir);
                         }
@@ -188,7 +189,7 @@ class HQ extends Role{
                 }
                 //Attack nearby enemies (range^2 = 15).
                 if(enemyRobotInfo.size() > 0) {
-                    RobotInfo target = getWeakestTargetInRange(allyHQLocation, enemyRobotInfo);
+                    RobotInfo target = bestTargetInRange(allyHQLocation, enemyRobotInfo);
                     if (target != null) {
                         rc.attackSquare(target.location);
                     }

@@ -1,5 +1,4 @@
 package team090;
-
 import battlecode.common.Direction;
 import battlecode.common.GameConstants;
 import battlecode.common.RobotController;
@@ -33,18 +32,17 @@ abstract class Role{
     int mapHeight;     
     MapLocation allyHQLocation;
     MapLocation enemyHQLocation;
+    //NOTE: Careful about this one
     Direction enemyDir;
     Team myTeam;
     Team notMyTeam;
     double pheromoneStrength = 0;
-
-    int aggression;
+    double health;
 
     MapLocation target = null;
-    //Pheromone trail for pathfinding (private to each robot).
+    //Pheromone trail
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
-    //Run loop implementation for each role.
     abstract void execute(); 
 
     //Constructor
@@ -56,10 +54,10 @@ abstract class Role{
         mapHeight = rc.getMapHeight();
         allyHQLocation = rc.senseHQLocation();
         enemyHQLocation = rc.senseEnemyHQLocation();
+        //NOTE: Careful about this one
         enemyDir = allyHQLocation.directionTo(enemyHQLocation);
     }
-
-    Direction getNextAdjacentEmptyLocation(MapLocation src, Direction initial) {
+    Direction nextAdjacentEmptyLocation(MapLocation src, Direction initial) {
         Direction[] alternatives = new Direction[7];
         int offset = initial.ordinal();
         for(int i = 0; i < 7; i++) {
@@ -77,39 +75,195 @@ abstract class Role{
         }
         return Direction.NONE;
     }
-    //TODO: fill in terrain to prevent getting stuck.
-    void tryToWalk(MapLocation src,
-                   ArrayList<RobotInfo> allyRobotInfo,
-                   ArrayList<RobotInfo> enemyRobotInfo,
-                   int mode) throws Exception {
-        Vector North, NorthEast, East, SouthEast, South, SouthWest, West, NorthWest;
-        Direction desiredDirection;
-        pheromoneStrength = 0;
-        /*
-        for (MapLocation p: myTrail) {
-            if (src.distanceSquaredTo(p) < 4) {
-                //GA TODO: ++ bad, += param good.
-                pheromoneStrength++;
+    //This function calculates if the local engagement is favorable for the team.
+    //Does not decide on positioning, only local team aggresion.
+    //NOTE: Assumes that all robotInfo in the arraylist is in range.
+    double calculateAdvantage(MapLocation src,
+                              ArrayList<RobotInfo> allyRobotInfo,
+                              ArrayList<RobotInfo> enemyRobotInfo) {
+        int nearbyAllyCount = 0;
+        double nearbyAllyAggregateHealth = 0;
+        int nearbyEnemyCount = 0;
+        double nearbyEnemyAggregateHealth = 0;
+
+        for (RobotInfo info: allyRobotInfo) {
+            //GA TODO: paramize. (5)
+            if (info.location.distanceSquaredTo(src) < 36) {
+                nearbyAllyCount++;
+                //Weigh high health units much higher.
+                nearbyAllyAggregateHealth += info.health*info.health;
             }
         }
-        */
-        if (pheromoneStrength > 0) {
-            //TODO: Calculate min-force obstacle pathfinding.
-            desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
+        for (RobotInfo info: enemyRobotInfo) {
+            if (info.location.distanceSquaredTo(src) < 36) {
+                nearbyEnemyCount++;
+                //Weigh high health units much higher.
+                nearbyEnemyAggregateHealth += info.health*info.health;
+            }
+        }
+        //Eval function
+        //GA TODO: ax+b - cy+d
+        return nearbyAllyAggregateHealth - nearbyEnemyAggregateHealth;
+    }
+    //Vector Field Go To//
+    //Go to and surround the target, keeping a given distance.
+    //NOTE: requires target to be set.
+    Vector VFcharge(MapLocation src,
+                    ArrayList<RobotInfo> allyRobotInfo,
+                    ArrayList<RobotInfo> enemyRobotInfo,
+                    double range) throws Exception {
+        int count;
+        Vector netForce = new Vector();
+        Vector allyForce = new Vector();
+        Vector enemyForce = new Vector();
+        Vector targetForce = new Vector();
+        if (range > 0) {
+            targetForce = Vector.getForceVector(src,
+                    target).step(range, 16, -6);
         } else {
-            //Unobstructed walking
-            desiredDirection = netForceAt(src, allyRobotInfo, enemyRobotInfo, mode).toDirectionEnum();
+            targetForce = Vector.getForceVector(src,
+                    target).logistic(0, 12, 0);
         }
-        //Error checking for move.
-        //TODO: figure out how action delay works.x
-        while (rc.getActionDelay() > 1) {
-            rc.yield();
+        count = 0;
+        for (RobotInfo info: allyRobotInfo) {
+            if (info.location.distanceSquaredTo(src) < 36) {
+                if (info.type == RobotType.SOLDIER) {
+                    count++;
+                    //GA TODO: paramaterize weights.
+                    allyForce.add(Vector.getForceVector(src,
+                                info.location).log(2.4, 0.5));
+                }
+            }
         }
+        count = 0;
+        for (RobotInfo info: enemyRobotInfo) {
+            if (info.location.distanceSquaredTo(src) < 36) {
+                switch (info.type) {
+                    case SOLDIER:
+                        count++;
+                        //GA TODO: paramaterize weights.
+                        enemyForce.add(Vector.getForceVector(src,
+                                    info.location).log(0, -0.3));
+                        break;
+                    case PASTR:
+                        enemyForce.add(Vector.getForceVector(src,
+                                    info.location).log(-1, 4));
+                }
+            }
+        }
+        if (count > 0) {
+            enemyForce = enemyForce.scale(2.0/count);
+        }
+        netForce.add(allyForce);
+        netForce.add(enemyForce);
+        netForce.add(targetForce);
+        return netForce;
+    }
+    //Vector Field Go To and Regroup//
+    //Go to nearby allies, also gravitate towards the target.
+    //NOTE: requires target to be set.
+    Vector VFregroup(MapLocation src,
+                     ArrayList<RobotInfo> allyRobotInfo) throws Exception {
+        //Stay together with allied soldiers and go to the target location.
+        Vector netForce = new Vector();
+        Vector allyForce = new Vector();
+        Vector targetForce = Vector.getForceVector(src, target).log(0, 2);
+
+        //count = 0;
+        for (RobotInfo info: allyRobotInfo) {
+            switch (info.type) {
+                case SOLDIER: 
+                    //           count++;
+                    allyForce.add(Vector.getForceVector(src,
+                                info.location).log(1, 2));
+                    break;
+                case PASTR:
+                    //           count++;
+                    allyForce.add(Vector.getForceVector(src,
+                                info.location).log(5, 2));
+                    break;
+            }
+        }
+        netForce.add(allyForce);
+        netForce.add(targetForce);
+        return netForce;
+    }
+    //Vector Field Flee//
+    //Runs to target if no enemies are in sight.
+    Vector VFflee(MapLocation src,
+                  ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
+        Vector netForce = new Vector();
+        Vector enemyForce = new Vector();
+        //GA TODO: parameterize.
+        Vector targetForce = Vector.getForceVector(src,
+                target).logistic(3, 1, 1);
+
+        //count = 0;
+        for (RobotInfo info: enemyRobotInfo) {
+            if (info.location.distanceSquaredTo(src) < 36) {
+                if (info.type == RobotType.SOLDIER) {
+                    //      count++;
+                    enemyForce.add(Vector.getForceVector(src,
+                                info.location).inv(-2, 0, -1));
+                }
+            }
+        }
+        netForce.add(enemyForce);
+        netForce.add(targetForce);
+        return netForce; 
+    }
+    Vector getPheremoneForce(MapLocation src) {
+        Vector pheromoneForce = new Vector();
+        //count = 0;
+        if (myTrail.size() > 0) {
+            for (MapLocation pheromone: myTrail) {
+                if (src.distanceSquaredTo(pheromone) > 9) {
+                    continue;
+                }
+                //count++;
+                //GA TODO: params pls.
+                pheromoneForce.add(Vector.getForceVector(src,
+                            pheromone).inv(-3.4, 0.5, 0));
+            }
+        }
+        return pheromoneForce;
+    }
+    void tryMove(MapLocation src,
+                 ArrayList<RobotInfo> allyRobotInfo,
+                 ArrayList<RobotInfo> enemyRobotInfo,
+                 int mode,
+                 //Param is range for VFcharge, ignored if mode != 0
+                 double param) throws Exception {
+        Vector force = new Vector();
+        Direction desiredDirection;
+        boolean onPheromone = false;
+        for (MapLocation pheromone: myTrail)
+            if (pheromone.equals(src))
+                onPheromone = true;
+      //while (rc.getActionDelay() > 1) {
+      //    rc.yield();
+      //}
+        switch (mode) {
+            case 0:
+                force = VFcharge(src, allyRobotInfo, enemyRobotInfo, param);
+                break;
+            case 1:
+                force = VFregroup(src, allyRobotInfo);
+                break;
+            case 2:
+                force = VFflee(src, enemyRobotInfo);
+                break;
+            default:
+                System.out.printf("Invalid mode selected: %d\n", mode);
+                force = VFflee(src, enemyRobotInfo);
+                break;
+        }
+        desiredDirection = force.toDirectionEnum();
         if (rc.canMove(desiredDirection)) {
             rc.move(desiredDirection);
         } else {
             //Choose the next available location to escape the local minima.
-            desiredDirection = getNextAdjacentEmptyLocation(src, desiredDirection);
+            desiredDirection = nextAdjacentEmptyLocation(src, desiredDirection);
             if ((desiredDirection != Direction.NONE) && 
                 (rc.canMove(desiredDirection))) {
                 rc.move(desiredDirection);
@@ -118,202 +272,19 @@ abstract class Role{
         //Lay down pheromone trail.
         myTrail.offer(src);
         //GA TODO: parameterize the trail size.
-        if (myTrail.size() > 9) {
+        if (myTrail.size() > 4) {
             myTrail.remove();
         }
     }
-    double howScared(MapLocation src,
-                     ArrayList<RobotInfo> allyRobotInfo,
-                     ArrayList<RobotInfo> enemyRobotInfo) {
-        if (rc.getHealth() <= 30) {
-            return 10;
-        }
-        double nearbyAllyCount = 0;
-        double nearbyEnemyCount = 0;
-        for (RobotInfo info: allyRobotInfo) {
-            if (src.distanceSquaredTo(info.location) < 36) {
-                nearbyAllyCount += (info.health*info.health/10000.0);
-            }
-        }
-        //TODO: see if this makes a difference.
-        for (RobotInfo info: enemyRobotInfo) {
-            if (src.distanceSquaredTo(info.location) < 36) {
-                nearbyEnemyCount += (info.health*info.health/10000.0);
-            }
-        }
-        if (nearbyAllyCount < nearbyEnemyCount ||
-            (nearbyEnemyCount > 1 && nearbyAllyCount < nearbyEnemyCount+1)) {
-            return 1+nearbyEnemyCount-nearbyAllyCount;
-        }
-        return 0;
-    }
-    //TODO: bytecode optimize this call so that
-    //only one call to senseNearbyGameObjects needs to be made each turn.
-    Vector netForceAt(MapLocation src,
-                      ArrayList<RobotInfo> allyRobots,
-                      ArrayList<RobotInfo> enemyRobots,
-                      int mode) throws Exception {
-        Vector netForce = new Vector();
-        Vector targetForce = new Vector();
-        Vector pheromoneForce = new Vector();
-        Vector enemyHQForce = Vector.getForceVector(src, enemyHQLocation);
-        Vector allyHQForce = Vector.getForceVector(src, allyHQLocation);
-        Vector enemyForce = new Vector();
-        Vector allyForce = new Vector();
-        int count;
-
-        switch (mode) {
-            case 0:
-            //Charge mode:
-            //Go to the enemyHQ, but keep a distance.
-            //Have all units attempt to camp and surround the enemy base.
-            //Don't walk alone blindly either. Walk with buddies.
-                //GA TODO: paramaterize weights.
-                enemyHQForce = enemyHQForce.log(3.9+2, 4);
-                allyHQForce = allyHQForce.log(6, 0.2);
-                //TODO: make sure this check is necassary
-                //Allied forces
-                if (allyRobots.size() > 0) {
-                    count = 0;
-                    for (RobotInfo i: allyRobots) {
-                        switch (i.type) {
-                            case SOLDIER: 
-                                count++;
-                                allyForce.add(Vector.getForceVector(src, i.location));
-                                break;
-                        }
-                    }
-                    if (count > 0) {
-                        //GA TODO: set scale factor.
-                        allyForce = allyForce.scale(1.0/count);
-                    }
-                    allyForce.log(2.7, 2.2);
-                }
-                //Enemy forces
-                //TODO: add different mode responses and aggression parameter.
-                if (enemyRobots.size() > 0) {
-                    count = 0;
-                    for (RobotInfo i: enemyRobots) {
-                        switch (i.type) {
-                            case SOLDIER: 
-                                count++;
-                                enemyForce.add(Vector.getForceVector(src, i.location));
-                                break;
-                            //TODO: split up soldier and pastr forces
-                            case PASTR: 
-                                count++;
-                                enemyForce.add(Vector.getForceVector(src, i.location));
-                                break;
-                        }
-                    }
-                    if (count > 0) {
-                        //GA TODO: set scale factor.
-                        enemyForce = enemyForce.scale(1.0/count);
-                    }
-                }
-                enemyForce = new Vector();
-                break;
-            case 1:
-                //Grouping mode:
-                //Stay together with allied soldiers, and if there are no allies,
-                //surround the ally HQ.
-                //TODO: Vector.step()
-                if (enemyHQForce.getMagnitudeSq() < 16) {
-                    enemyHQForce = enemyHQForce.log(3.9+1.2, 6);
-                } else {
-                    enemyHQForce = new Vector();
-                }
-                //Allied forces
-                //GA TODO: Parameterize army size.
-                if (allyRobots.size() < 3) {
-                    //Hover around the allied HQ.
-                    allyHQForce = allyHQForce.logistic(2, 5, 0);
-                } else {
-                    allyHQForce = allyHQForce.logistic(2, 1, 0);
-                    count = 0;
-                    for (RobotInfo i: allyRobots) {
-                        switch (i.type) {
-                            case SOLDIER: 
-                                count++;
-                                allyForce.add(Vector.getForceVector(src, i.location).logistic(-1, 2, 0));
-                                break;
-                            case PASTR:
-                                break;
-                            case HQ: 
-                                break;
-                        }
-                    }
-                    if (count > 0) {
-                        //GA TODO: Parameterize scale.
-                        allyForce = allyForce.scale(1.0/count);
-                    }
-                }
-                break;
-            case 2:
-                //TODO: this is redundant with case(3) now.
-                //Go home to allied HQ.
-                enemyHQForce = new Vector();
-                //GA TODO: parameter tweak to work well with the pheromone forces.
-                allyHQForce = allyHQForce.logistic(3, 2, 0);
-                break;
-            case 3:
-                //Go to target mode.
-                //Have the enemy HQ only repel.
-                allyHQForce = new Vector();
-                if (enemyHQForce.getMagnitudeSq() < 16) {
-                    enemyHQForce = enemyHQForce.log(3.9+1.2, 6);
-                } else {
-                    enemyHQForce = new Vector();
-                }
-                //Enemy forces
-                //TODO: add different mode responses and aggression parameter.
-                if (enemyRobots.size() > 0) {
-                    count = 0;
-                    for (RobotInfo i: enemyRobots) {
-                        switch (i.type) {
-                            case SOLDIER: 
-                                count++;
-                                enemyForce.add(Vector.getForceVector(src, i.location).log(0, -1));
-                                break;
-                        }
-                    }
-                    //TODO: remove this scaling?
-                    if (count > 0) {
-                        //GA TODO: set scale factor.
-                        enemyForce = enemyForce.scale(1.0/count);
-                    }
-                }
-                targetForce = Vector.getForceVector(src, target).logistic(-2, 2, 0);
-                if(src.distanceSquaredTo(target) < 17) {
-                    return targetForce;
-                }
-                break;
-        }
-        if (myTrail.size() > 0) {
-            count = 0;
-            for (MapLocation p: myTrail) {
-                count++;
-                if (src.distanceSquaredTo(p) < 17) {
-                    //GA TODO: params pls.
-                    pheromoneForce.add(Vector.getForceVector(src, p).poly(0, 0, -3.4, 0.5, 0));
-                }
-            }
-        }
-        netForce.add(targetForce);
-        netForce.add(allyForce);
-        netForce.add(enemyForce);
-        netForce.add(allyHQForce);
-        netForce.add(enemyHQForce);
-        //netForce.add(pheromoneForce);
-        return netForce;
-    } 
-    RobotInfo getWeakestTargetInRange(MapLocation src, ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
-        //Choose the best robot to attack.
-        //Prioritizes low HP units and SOLDIERS over PASTRS.
-        //Do not attack HQs (futile).
+    //Choose the best robot to attack.
+    //Priority: SOLDIERS > PASTRS > NOISETOWER, HP.
+    //Do not attack HQ (futile).
+    RobotInfo bestTargetInRange(MapLocation src,
+            ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
         double lowestHP = (double)Integer.MAX_VALUE;
         RobotInfo bestTarget = null;
         for (RobotInfo info : enemyRobotInfo) {
+            //Do not consider things out of range.
             if (src.distanceSquaredTo(info.location) > 10) {
                 continue;
             }
@@ -325,9 +296,17 @@ abstract class Role{
                     }
                     break;
                 case PASTR:
-                    //Do not take priority over soldiers.
-                    if ((bestTarget == null
-                         || bestTarget.type != RobotType.SOLDIER) &&
+                    if ((bestTarget == null ||
+                         bestTarget.type != RobotType.SOLDIER) &&
+                        info.health < lowestHP) {
+                        lowestHP = info.health;
+                        bestTarget = info;
+                    }
+                    break;
+                case NOISETOWER:
+                    if ((bestTarget == null ||
+                         (bestTarget.type != RobotType.SOLDIER &&
+                          bestTarget.type != RobotType.PASTR)) &&
                         info.health < lowestHP) {
                         lowestHP = info.health;
                         bestTarget = info;
@@ -349,9 +328,6 @@ abstract class Role{
             new MapLocation(mapWidth - 4, 3), 
             new MapLocation(mapWidth - 4, mapHeight - 4)};
         Arrays.sort(result, new LocComparator());
-        for (MapLocation m : result) {
-            System.out.println(m);
-        }
         return result;
     }
 }

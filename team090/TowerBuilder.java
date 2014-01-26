@@ -13,6 +13,16 @@ class TowerBuilder extends Role{
 
     TowerBuilder(RobotController rc, int x, int y, RobotType structure) {
         super(rc);
+        switch(structure) {
+            case PASTR:
+                keepaliveChannel = 6;
+                break;
+            case NOISETOWER:
+                keepaliveChannel = 7;
+                break;
+            default:
+                break;
+        }
         goal = new MapLocation(x, y);
         target = allyHQLocation;
         blueprints = structure;
@@ -23,10 +33,12 @@ class TowerBuilder extends Role{
     void execute() {
         try {
             if (rc.getLocation().equals(target)) {
-                //Construct the NOISETOWER when at target.
+                //Construct the NOISETOWER when the location matches.
+                rc.broadcast(keepaliveChannel, Clock.getRoundNum() + getStructureCost(blueprints));
                 rc.construct(blueprints);
                 return;
             } else {
+                keepalive();
                 //Go to the designated NOISETOWER location.
                 myLocation = rc.getLocation();
                 //GA TODO: parameterize.

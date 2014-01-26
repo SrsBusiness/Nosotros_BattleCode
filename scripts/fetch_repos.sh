@@ -32,3 +32,7 @@ git clone git@github.com:skoppula/yummycode-2014 skoppula
 git clone git@github.com:skylarjhdownes/booleanisdragonbattlecode2014 skylarjhdownes
 git clone git@github.com:ssscoder/BattleCode ssscoder
 git clone git@github.com:therealgin/BATTLECODE2014 therealgin2
+git clone git@github.com:darkshark007/team108 team108
+git clone git@github.com:golddove/battlecode golddove
+git clone git@github.com:shaladi/battlecode shaladi
+git clone git@github.com:monicathornton/battlecode2014 monicathornton

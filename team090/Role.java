@@ -7,6 +7,7 @@ import battlecode.common.*;
 import java.util.*;
 
 abstract class Role{
+    static final int WAYPOINT_DISTANCE = 1;
     Direction[] directions = {
         Direction.NORTH, 
         Direction.NORTH_EAST, 
@@ -40,11 +41,82 @@ abstract class Role{
     double health;
 
     MapLocation target = null;
-    //Pheromone trail
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
+
+    LinkedList<MapLocation> wayPoints;
+    MapLocation myLocation;
+    int keepaliveChannel = -1;
 
     abstract void execute(); 
 
+    boolean findPath(RobotController rc, MapLocation dest){ // A* algorithm, sets up waypoints
+        // if path found, returns true, else returns false.
+        class QEntry{
+            QEntry(MapLocation loc, double fScore){
+                this.loc = loc;
+                this.fScore = fScore;
+            }
+            MapLocation loc;
+            double fScore;
+        }
+        HashSet<MapLocation> evaluated = new HashSet<MapLocation>();
+        PriorityQueue<QEntry> toEvaluate = new PriorityQueue<QEntry>(mapWidth + mapHeight, new Comparator<QEntry>(){
+            public int compare(QEntry o1, QEntry o2){
+                return (int)(o1.fScore - o2.fScore);
+            }
+        });
+        HashSet<MapLocation> toEvalSet = new HashSet<MapLocation>();
+        //HashSet<MapLocation> toEvaluate = new HashSet<MapLocation>();
+        //toEvaluate.add(myLocation);
+        HashMap<MapLocation, MapLocation> cameFrom = new HashMap<MapLocation, MapLocation>();
+        HashMap<MapLocation, Double> gScore = new HashMap<MapLocation, Double>();
+        gScore.put(myLocation, 0.0);
+        toEvaluate.add(new QEntry(myLocation, 0.0)); // first node shouldn't need a heuristic
+        toEvalSet.add(myLocation);
+        MapLocation current;
+        while(toEvaluate.size() > 0){
+            current = toEvaluate.poll().loc;
+            toEvalSet.remove(current);
+            if(current.equals(dest)){
+                path(cameFrom, dest);
+                return true;
+            }
+            evaluated.add(current);
+            for(MapLocation loc : MapLocation.getAllMapLocationsWithinRadiusSq(current, 1)){
+                TerrainTile tmp = rc.senseTerrainTile(loc);
+                switch(tmp){
+                    case OFF_MAP: case VOID:
+                        continue;
+                    default:
+                        if(evaluated.contains(loc))
+                            continue;
+                        double tGScore = gScore.get(current) + 
+                            (tmp.equals(TerrainTile.ROAD) ? .5 : 1) * 
+                            Math.sqrt(current.distanceSquaredTo(loc));
+                        if(!toEvalSet.contains(loc) || tGScore < gScore.get(loc)){
+                            cameFrom.put(loc, current);
+                            gScore.put(loc, tGScore);
+                            toEvaluate.add(new QEntry(loc, heuristic(loc, dest, gScore)));
+                            toEvalSet.add(loc);
+                        }
+                        break;
+                }
+            }
+        }
+        return false;
+    }
+    void path(HashMap<MapLocation, MapLocation> cameFrom, MapLocation dest){
+        wayPoints = new LinkedList<MapLocation>();
+        int i = 0;  
+        while(cameFrom.containsKey(dest)){
+            if(i++ % WAYPOINT_DISTANCE == 0)
+                wayPoints.add(0, dest);
+            dest = cameFrom.get(dest);
+        }
+    }
+    private double heuristic(MapLocation current, MapLocation dest, HashMap<MapLocation, Double> gScore){
+        return Math.sqrt(current.distanceSquaredTo(dest)) + gScore.get(current); 
+    }
     //Constructor
     Role(RobotController rc) {
         this.rc = rc;
@@ -329,5 +401,20 @@ abstract class Role{
             new MapLocation(mapWidth - 4, mapHeight - 4)};
         Arrays.sort(result, new LocComparator());
         return result;
+    }
+    int getStructureCost(RobotType structure) {
+        switch (structure) {
+            case PASTR: return 50;
+            case NOISETOWER: return 100;
+            default: return 0;
+        }
+    }
+    void keepalive() {
+        if (keepaliveChannel == -1) return;
+        try {
+            rc.broadcast(keepaliveChannel, Clock.getRoundNum());
+        } catch (GameActionException e) {
+            System.out.println(e + " Role Exception");
+        }
     }
 }

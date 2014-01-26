@@ -9,11 +9,11 @@ import java.util.*;
 class NoiseTower extends Role {
 
     // TODO: GA this
-    final static int RADIUS_DECREMENT  = 1;
-    final static int RADIUS_MINIMUM    = 9;
+    final static int RADIUS_DECREMENT  = 2;
+    final static int RADIUS_MINIMUM    = 6;
     final static int RADIUS_MAXIMUM    = 18;
-    final static int ROTATE_PARTITIONS = 16;
-    final static double ROTATE_RADIAN  = Math.PI/ROTATE_PARTITIONS;
+    final static int ROTATE_PARTITIONS = 8;
+    final static double ROTATE_RADIAN  = 2*Math.PI/ROTATE_PARTITIONS;
 
     MapLocation base = null;
     int radius = RADIUS_MAXIMUM;
@@ -25,20 +25,19 @@ class NoiseTower extends Role {
         System.out.println("C'est facil; herding cows. For I am the world's tower.");
     }
     void execute() {
+        target = getSpiralLocation();
         try {
-            target = getSpiralLocation();
-            if (rc.canAttackSquare(target) && 
-                    //Optional:
-                (target.x > 0 && target.y > 0 && target.x < mapWidth && target.y < mapHeight)) {
+            if (rc.canAttackSquare(target)) {
                 rc.attackSquare(target);
             }
-            rotation += 1;
-            if (rotation%ROTATE_PARTITIONS == 0) {
+            do {
                 radius -= RADIUS_DECREMENT;
-            }
-            if (radius <= RADIUS_MINIMUM) {
-                radius = RADIUS_MAXIMUM;
-            }
+                if (radius < RADIUS_MINIMUM) {
+                    radius = RADIUS_MAXIMUM;
+                    rotation += 1;
+                }
+                target = getSpiralLocation();
+            } while (target.x < 0 || target.y < 0 || target.x > mapWidth || target.y > mapHeight);
         } catch (Exception e) {
             System.err.println(e.toString() + "Noisetower Exception");
         }

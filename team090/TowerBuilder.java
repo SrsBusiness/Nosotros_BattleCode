@@ -31,13 +31,14 @@ class TowerBuilder extends Role{
     }
     void execute() {
         try {
-            keepalive();
             //Go to the designated NOISETOWER location.
             if (rc.getLocation().equals(target)) {
                 //Construct the NOISETOWER when the location matches.
+                rc.broadcast(keepaliveChannel, Clock.getRoundNum() + getStructureCost(blueprints));
                 rc.construct(blueprints);
                 return;
             } else {
+                keepalive();
                 Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 35, notMyTeam);
                 ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
                 if (nearbyRobots.length > 0) {

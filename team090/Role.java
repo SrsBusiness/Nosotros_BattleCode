@@ -479,6 +479,14 @@ abstract class Role{
         return result;
     }
 
+    int getStructureCost(RobotType structure) {
+        switch (structure) {
+            case PASTR: return 50;
+            case NOISETOWER: return 100;
+            default: return 0;
+        }
+    }
+
     void keepalive() {
         if (keepaliveChannel == -1) return;
         try {

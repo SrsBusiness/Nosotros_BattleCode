@@ -32,10 +32,7 @@ class HQ extends Role{
     }
     boolean getUnitTypeStatus(int type) {
         try {
-            if (Clock.getRoundNum() - rc.readBroadcast(type) > 1) {
-                System.out.println("We've got a dead guy, time to rebuild " + type);
-            }
-            return (Clock.getRoundNum() - rc.readBroadcast(type) <= 1);
+            return (Clock.getRoundNum() - rc.readBroadcast(type) <= 2);
         } catch (GameActionException e) {
             System.out.println(e + " HQ Exception");
         }

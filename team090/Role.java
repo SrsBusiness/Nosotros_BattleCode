@@ -40,6 +40,7 @@ abstract class Role{
     double pheromoneStrength = 0;
     LinkedList<MapLocation> wayPoints;
     MapLocation myLocation;
+    int keepaliveChannel = -1;
 
     int aggression;
     MapLocation target = null;
@@ -476,5 +477,14 @@ abstract class Role{
             System.out.println(m);
         }
         return result;
+    }
+
+    void keepalive() {
+        if (keepaliveChannel == -1) return;
+        try {
+            rc.broadcast(keepaliveChannel, Clock.getRoundNum());
+        } catch (GameActionException e) {
+            System.out.println(e + " Role Exception");
+        }
     }
 }

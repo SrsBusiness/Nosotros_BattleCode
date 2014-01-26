@@ -21,12 +21,15 @@ class NoiseTower extends Role {
 
     NoiseTower(RobotController rc) {
         super(rc);
+        keepaliveChannel = 7;
         base = rc.getLocation();
         System.out.println("C'est facil; herding cows. For I am the world's tower.");
     }
     void execute() {
-        target = getSpiralLocation();
         try {
+            keepalive();
+            target = getSpiralLocation();
+
             if (rc.canAttackSquare(target)) {
                 rc.attackSquare(target);
             }

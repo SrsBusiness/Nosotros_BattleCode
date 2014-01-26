@@ -13,6 +13,16 @@ class TowerBuilder extends Role{
 
     TowerBuilder(RobotController rc, int x, int y, RobotType structure) {
         super(rc);
+        switch(structure) {
+            case PASTR:
+                keepaliveChannel = 6;
+                break;
+            case NOISETOWER:
+                keepaliveChannel = 7;
+                break;
+            default:
+                break;
+        }
         goal = new MapLocation(x, y);
         target = allyHQLocation;
         blueprints = structure;
@@ -21,6 +31,7 @@ class TowerBuilder extends Role{
     }
     void execute() {
         try {
+            keepalive();
             //Go to the designated NOISETOWER location.
             if (rc.getLocation().equals(target)) {
                 //Construct the NOISETOWER when the location matches.

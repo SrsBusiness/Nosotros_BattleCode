@@ -30,6 +30,17 @@ class HQ extends Role{
         target = corners()[1].add(0, 1);
         return target;
     }
+    boolean getUnitTypeStatus(int type) {
+        try {
+            if (Clock.getRoundNum() - rc.readBroadcast(type) > 1) {
+                System.out.println("We've got a dead guy, time to rebuild " + type);
+            }
+            return (Clock.getRoundNum() - rc.readBroadcast(type) <= 1);
+        } catch (GameActionException e) {
+            System.out.println(e + " HQ Exception");
+        }
+        return true;
+    }
     void execute(){
         try {
             //Single-robot commands executed through broadcasts.
@@ -40,14 +51,16 @@ class HQ extends Role{
             }
             //GA TODO: set the PASTR construction time.
             //paramaterize all these starting triggers.
-            if (robotIDs.size() == 21 && farmer == 0) {
+            if ((robotIDs.size() >= 21 && farmer == 0)
+                || (farmer != 0 && getUnitTypeStatus(6) == false)) {
                 farmer = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, farmer);
                 rc.broadcast(2, 1);
                 target = selectFarmLocation();
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
-            } else if (robotIDs.size() == 22 && noisetowerMaker == 0) {
+            } else if ((robotIDs.size() >= 22 && noisetowerMaker == 0)
+                      || (noisetowerMaker != 0 && getUnitTypeStatus(7) == false)) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
                 rc.broadcast(2, 5);

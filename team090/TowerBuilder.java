@@ -23,8 +23,7 @@ class TowerBuilder extends Role{
             default:
                 break;
         }
-        goal = new MapLocation(x, y);
-        target = allyHQLocation;
+        target = new MapLocation(x, y);
         blueprints = structure;
         System.out.printf("Bonjour! Curr round: %d. Curr pos: %d, %d. My target: %d, %d\n",
                 Clock.getRoundNum(), rc.getLocation().x, rc.getLocation().y, target.x, target.y);
@@ -41,11 +40,6 @@ class TowerBuilder extends Role{
                 keepalive();
                 //Go to the designated NOISETOWER location.
                 myLocation = rc.getLocation();
-                //GA TODO: parameterize.
-                if (myLocation.distanceSquaredTo(target) < 36) {
-                    target = goal;
-                    System.out.printf("Arrived at base. Going to goal at: %d, %d\n", target.x, target.y);
-                }
                 Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 35, notMyTeam);
                 ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
                 if (nearbyRobots.length > 0) {

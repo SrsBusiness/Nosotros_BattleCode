@@ -20,13 +20,13 @@ class Infantry extends Role{
     void execute(){
         try {
             if(rc.isActive()) {
-                if (Clock.getRoundNum() == 1999) {
-                    double myMilk = rc.senseTeamMilkQuantity(myTeam);
-                    double enemyMilk = rc.senseTeamMilkQuantity(notMyTeam);
-                    if ((myMilk - enemyMilk) > GameConstants.HAT_MILK_COST + 5000) {
-                        rc.wearHat();
-                    }
-                }
+                // if (Clock.getRoundNum() == 1999) {
+                //     double myMilk = rc.senseTeamMilkQuantity(myTeam);
+                //     double enemyMilk = rc.senseTeamMilkQuantity(notMyTeam);
+                //     if ((myMilk - enemyMilk) > GameConstants.HAT_MILK_COST + 5000) {
+                //         rc.wearHat();
+                //     }
+                // }
                 Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class);
                 ArrayList<RobotInfo> allyRobotInfo = new ArrayList<RobotInfo>();
                 ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();

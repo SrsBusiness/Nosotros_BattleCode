@@ -44,8 +44,6 @@ abstract class Role{
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
     LinkedList<MapLocation> wayPoints;
-    int pathProgress = 0;
-    MapLocation pathSetTo = null;
     //NOTE: Unreliable
     MapLocation myLocation;
     int keepaliveChannel = -1;
@@ -164,24 +162,25 @@ abstract class Role{
 
         for (RobotInfo info: allyRobotInfo) {
             //GA TODO: paramize. (5)
-            if (info.location.distanceSquaredTo(src) < 36 &&
-                info.type != RobotType.HQ) {
+            if (info.location.distanceSquaredTo(src) < 16 &&
+                info.type == RobotType.SOLDIER) {
                 nearbyAllyCount++;
                 //Weigh high health units much higher.
                 nearbyAllyAggregateHealth += info.health*info.health;
             }
         }
         for (RobotInfo info: enemyRobotInfo) {
-            if (info.location.distanceSquaredTo(src) < 36 &&
-                info.type != RobotType.HQ) {
+            if (//info.location.distanceSquaredTo(src) < 16 &&
+                info.type == RobotType.SOLDIER) {
                 nearbyEnemyCount++;
                 //Weigh high health units much higher.
                 nearbyEnemyAggregateHealth += info.health*info.health;
             }
         }
+        rc.setIndicatorString(0, "Ally count: "+(nearbyAllyCount+1)+", Enemy count: "+nearbyEnemyCount);
         //Eval function
         //GA TODO: ax+b - cy+d
-        return nearbyAllyAggregateHealth - nearbyEnemyAggregateHealth;
+        return nearbyAllyAggregateHealth + health*health - nearbyEnemyAggregateHealth;
     }
     //Vector Field Go To//
     //Go to and surround the target, keeping a given distance.
@@ -200,7 +199,7 @@ abstract class Role{
                     target).step(range, 16, -6);
         } else {
             targetForce = Vector.getForceVector(src,
-                    target).logistic(0, 12, 0);
+                    target).logistic(0, 112, 0);
         }
         count = 0;
         for (RobotInfo info: allyRobotInfo) {
@@ -209,7 +208,7 @@ abstract class Role{
                     count++;
                     //GA TODO: paramaterize weights.
                     allyForce.add(Vector.getForceVector(src,
-                                info.location).log(2.4, 0.5));
+                                info.location).log(2.4, 0.8));
                 }
             }
         }
@@ -225,7 +224,7 @@ abstract class Role{
                         break;
                     case PASTR:
                         enemyForce.add(Vector.getForceVector(src,
-                                    info.location).log(-1, 4));
+                                    info.location).log(-1, 16));
                 }
             }
         }
@@ -283,13 +282,62 @@ abstract class Role{
                 if (info.type == RobotType.SOLDIER) {
                     //      count++;
                     enemyForce.add(Vector.getForceVector(src,
-                                info.location).log(-1, -4));
+                                info.location).log(-1, -6));
                 }
             }
         }
         netForce.add(enemyForce);
         netForce.add(targetForce);
         return netForce; 
+    }
+    Vector VFaggro(MapLocation src,
+                   ArrayList<RobotInfo> allyRobotInfo,
+                   ArrayList<RobotInfo> enemyRobotInfo,
+                   double range) {
+        int count;
+        double maxHealth = (double)Integer.MAX_VALUE;
+        RobotInfo robotTarget = enemyRobotInfo.size() > 0? enemyRobotInfo.get(0): null;
+        Vector netForce = new Vector();
+        Vector allyForce = new Vector();
+        Vector enemyForce = new Vector();
+        //Be warned.
+        Vector targetForce = Vector.getForceVector(src,
+                target).logistic(range, 1, 0);
+        count = 0;
+        for (RobotInfo info: allyRobotInfo) {
+            switch (info.type) {
+                case SOLDIER: 
+                    count++;
+                    allyForce.add(Vector.getForceVector(src,
+                                info.location).log(0, 1));
+                    break;
+            }
+        }
+        if (count > 0) {
+            allyForce = allyForce.scale(1.0/count);
+        }
+        for (RobotInfo info: enemyRobotInfo) {
+            switch (info.type) {
+                case SOLDIER: 
+                    if (info.health < maxHealth) {
+                        maxHealth = info.health;
+                        robotTarget = info;
+                    }
+                    break;
+                case PASTR:
+                    enemyForce.add(Vector.getForceVector(src,
+                                info.location).log(0, 2));
+                    break;
+            }
+        }
+        if (robotTarget != null) {
+            enemyForce.add(Vector.getForceVector(src,
+                        robotTarget.location).log(0, 4));
+        }
+        netForce.add(allyForce);
+        netForce.add(enemyForce);
+        netForce.add(targetForce);
+        return netForce;
     }
     Vector getPheremoneForce(MapLocation src) {
         Vector pheromoneForce = new Vector();
@@ -302,7 +350,7 @@ abstract class Role{
                 //count++;
                 //GA TODO: params pls.
                 pheromoneForce.add(Vector.getForceVector(src,
-                            pheromone).inv(-3, 0.5, -1));
+                            pheromone).inv(-5, 0.5, -1));
             }
         }
         return pheromoneForce;
@@ -318,32 +366,21 @@ abstract class Role{
         Direction desiredDirection;
         boolean nearWall = false;
         /*
-        //Don't do anything if everything is okay.
-        if (src.equals(target)) {
-            if (pathSetTo != null &&
-                pathSetTo.equals(target)) {
-                pathSetTo = null;
-            }
-            if (failCount > 0) {
-                pathProgress += 5;
-                failCount = 0;
-            } else {
-                return;
-            }
-        }
-        */
         for (MapLocation pheromone: myTrail) {
             if (src.equals(pheromone)) {
                 failCount++;
                 break;
             }
         }
+        */
+        /*
         //Use pheremones if touching a wall.
         if (rc.senseTerrainTile(src.add(Direction.NORTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.WEST)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.SOUTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1)
             nearWall = true;
+        */
         /*
         if (failCount > 7 &&
             src.distanceSquaredTo(target) > 36) {
@@ -365,14 +402,19 @@ abstract class Role{
             case 2:
                 force = VFflee(src, enemyRobotInfo);
                 break;
+            case 3:
+                force = VFaggro(src, allyRobotInfo, enemyRobotInfo, param);
+                break;
             default:
                 System.out.printf("Invalid mode selected: %d\n", mode);
                 force = VFflee(src, enemyRobotInfo);
                 break;
         }
+        /*
         if (nearWall) {
             force.add(getPheremoneForce(src));
         }
+        */
         desiredDirection = force.toDirectionEnum();
         if (rc.canMove(desiredDirection)) {
             rc.move(desiredDirection);

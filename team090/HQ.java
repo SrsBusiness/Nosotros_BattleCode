@@ -124,7 +124,7 @@ class HQ extends Role{
             }
             //GA TODO: set the PASTR construction time.
             //paramaterize all these starting triggers.
-            if ((robotIDs.size() >= 10 && noisetowerMaker == 0)
+            if ((robotIDs.size() >= 6 && noisetowerMaker == 0)
                       || (noisetowerMaker != 0 && getUnitTypeStatus(7) == false)) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, noisetowerMaker);
@@ -132,7 +132,7 @@ class HQ extends Role{
                 target = selectNoiseTowerLocation();
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
-            } else if ((robotIDs.size() >= 11 && farmer == 0)
+            } else if ((robotIDs.size() >= 7 && farmer == 0)
                 || (farmer != 0 && getUnitTypeStatus(6) == false)) {
                 farmer = robotIDs.get(robotIDs.size()-1);
                 rc.broadcast(1, farmer);

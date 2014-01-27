@@ -10,8 +10,11 @@ class Infantry extends Role{
     int mode = 0;    
     double range = 4;
     double advantage = 0;
-    MapLocation myLocation;
-    boolean offensive = false;
+
+    MapLocation dst = null;
+    MapLocation lastDst = null;
+    MapLocation currWaypoint = null;
+    int index = 0;
     
     Infantry(RobotController rc) {
         super(rc);
@@ -54,21 +57,23 @@ class Infantry extends Role{
                     }
                 }
                 //Mode selection
-                if (health <= 30) {
-                    //Always flee if on low health.
+                if (health <= 30 &&
+                    advantage < 0 &&
+                    enemyRobotInfo.size() > 1) {
                     mode = 2;
                     range = 0;
-                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                } else if (allyRobotInfo.size() < 3) {
+                    dst = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                } else if (nearbyAllyCount < 3) {
                     //Never solo. Wait at the base to regroup if stranded.
                     mode = 1;
                     range = 0;
-                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                } else if (advantage == 0) {
-                    //Cold war tactics
+                    dst = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                } else if (advantage == 0 && enemyRobotInfo.size() > 0) {
+                    //Cold war tactics:
+                    //Don't move.
                     mode = 5;
-                    range = 3.163;
-                    target = myLocation;
+                    range = 0;//3.163;
+                    dst = myLocation;
                 } else if (advantage < 0) {
                     //In a disadvantage, run back to base.
                     //mode = 0;
@@ -76,21 +81,61 @@ class Infantry extends Role{
                     //In a disadvantage, flee back to base.
                     mode = 2;
                     range = 0;
-                    target = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                }/* else if (advantage > 20000) {
-                        mode = 3;
-                        range = 0;
-                        target = allyHQLocation;
-                    }*/
-                else {
+                    dst = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
+                } else if (advantage > 20000 &&
+                           enemyRobotInfo.size() > 1) {
+                    mode = 3;
+                    range = 0;
+                    dst = enemyHQLocation;
+                    //dst = new MapLocation(mapWidth/2, mapHeight/2);
+                } else {
                     //By default, charge to their base.
                     mode = 0;
-                    range = 7;
-                    target = enemyHQLocation;
+                    range = 0;//7;
+                    dst = enemyHQLocation;
                 }
-//                System.out.printf("%d: Mode: %d, advantage: %f, HP: %f\n",
-//                        Clock.getRoundNum(), mode, advantage, health);
-                if (mode == 0 || mode == 1) {
+                /*
+                dst = enemyHQLocation;
+                if (dst.distanceSquaredTo(myLocation) > 64) {
+                    //Switching destinations
+                    if (dst != null &&
+                        lastDst != dst) {
+                        findPath(myLocation, dst);
+                        lastDst = dst;
+                        index = 12;
+                        currWaypoint = wayPoints.get(index);
+                        target = currWaypoint;
+                        System.out.println("Initial waypoint:"+currWaypoint.x+", "+currWaypoint.y);
+                    }
+                    //If at the next waypoint
+                    if (currWaypoint.distanceSquaredTo(myLocation) < 4) {
+                        currWaypoint = wayPoints.get(index);
+                        index += 8;
+                        target = currWaypoint;
+                        System.out.println("new waypoint:"+currWaypoint.x+", "+currWaypoint.y);
+                    }
+                } else {
+                    target = dst;
+                }
+                range = 0;
+                mode = 0;
+                */
+                //
+                range = 0; mode = 0;
+                dst = enemyHQLocation;
+                if (lastDst == null) {
+                    findPath(myLocation, dst);
+                    lastDst = dst;
+                    index = 12;
+                    target = wayPoints.get(index);
+                } 
+                if (target.distanceSquaredTo(rc.getLocation()) <= 4) {
+                    index += 8;
+                    target = wayPoints.get(index);
+                }
+                //
+                rc.setIndicatorString(1, "Mode: "+mode+", Advantage: "+advantage);
+                if (mode == 0 || mode == 1 || mode == 5) {
                     //If in an aggressive mode, attack if possible.
                     if (enemyRobotInfo.size() > 0) {
                         //Attacking, selecting the enemy with the lowest health.
@@ -102,8 +147,10 @@ class Infantry extends Role{
                         }
                     }
                 }
-                //Moving, using vector field.
-                tryMove(myLocation, allyRobotInfo, enemyRobotInfo, mode, range);
+                if (mode != 5) {
+                    //Moving, using vector field.
+                    tryMove(myLocation, allyRobotInfo, enemyRobotInfo, mode, range);
+                }
             }
         } catch(Exception e) {
             e.printStackTrace();

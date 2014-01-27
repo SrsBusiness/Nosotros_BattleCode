@@ -161,7 +161,8 @@ class HQ extends Role{
                 //Check if a robot is spawnable and spawn one if it is
                 if (rc.isActive() &&
                     rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
-                    if (rc.senseObjectAtLocation(rc.getLocation().add(enemyDir)) == null) {
+                    //This shouldn't work...
+                    if (rc.canMove(enemyDir)) {
                         rc.spawn(enemyDir);
                     } else {
                         Direction availDir = nextAdjacentEmptyLocation(myLocation, enemyDir);

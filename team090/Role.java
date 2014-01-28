@@ -33,20 +33,21 @@ abstract class Role{
     int mapHeight;     
     MapLocation allyHQLocation;
     MapLocation enemyHQLocation;
-    //NOTE: Careful about this one
-    Direction enemyDir;
     Team myTeam;
     Team notMyTeam;
-    double health;
-    int failCount = 0;
+    //NOTE: Refers to direction from AllyHQ to EnemyHQ.
+    Direction enemyDir;
 
     MapLocation target = null;
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
-    LinkedList<MapLocation> wayPoints;
-    //NOTE: Unreliable
-    MapLocation myLocation;
     int keepaliveChannel = -1;
+
+    LinkedList<MapLocation> wayPoints;
+
+    //NOTE: Unreliable.
+    MapLocation currLoc;
+    double currHP;
 
     abstract void execute(); 
 
@@ -166,7 +167,7 @@ abstract class Role{
                 info.type == RobotType.SOLDIER) {
                 nearbyAllyCount++;
                 //Weigh high health units much higher.
-                nearbyAllyAggregateHealth += info.health*info.health;
+                nearbyAllyAggregateHealth += info.health;
             }
         }
         for (RobotInfo info: enemyRobotInfo) {
@@ -174,13 +175,13 @@ abstract class Role{
                 info.type == RobotType.SOLDIER) {
                 nearbyEnemyCount++;
                 //Weigh high health units much higher.
-                nearbyEnemyAggregateHealth += info.health*info.health;
+                nearbyEnemyAggregateHealth += info.health;
             }
         }
         rc.setIndicatorString(0, "Ally count: "+(nearbyAllyCount+1)+", Enemy count: "+nearbyEnemyCount);
         //Eval function
         //GA TODO: ax+b - cy+d
-        return nearbyAllyAggregateHealth + health*health - nearbyEnemyAggregateHealth;
+        return nearbyAllyAggregateHealth+currHP - nearbyEnemyAggregateHealth;
     }
     //Vector Field Go To//
     //Go to and surround the target, keeping a given distance.

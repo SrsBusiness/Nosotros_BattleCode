@@ -100,6 +100,7 @@ public class RobotPlayer {
             } catch (Exception e) {
                 System.err.println(e + " RobotPlayer Exception");
             }
+            //Bytecode cost: 48 up to here (as of 64fca1348b7d7f60bb3d131a09b03389c85bdb6b)
             if(rc.isActive()) {
                 currentRole.execute();
             }

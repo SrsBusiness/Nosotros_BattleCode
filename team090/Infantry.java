@@ -15,6 +15,9 @@ class Infantry extends Role{
     MapLocation lastDst = null;
     MapLocation currWaypoint = null;
     int index = 0;
+
+    //BENCHMARKING
+    int bytecodes;
     
     Infantry(RobotController rc) {
         super(rc);
@@ -23,134 +26,50 @@ class Infantry extends Role{
     void execute(){
         try {
             if(rc.isActive()) {
-                // if (Clock.getRoundNum() == 1999) {
-                //     double myMilk = rc.senseTeamMilkQuantity(myTeam);
-                //     double enemyMilk = rc.senseTeamMilkQuantity(notMyTeam);
-                //     if ((myMilk - enemyMilk) > GameConstants.HAT_MILK_COST + 5000) {
-                //         rc.wearHat();
-                //     }
-                // }
-                Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class);
-                ArrayList<RobotInfo> allyRobotInfo = new ArrayList<RobotInfo>();
-                ArrayList<RobotInfo> enemyRobotInfo = new ArrayList<RobotInfo>();
+                /*
+                Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 36, myTeam);
+                ArrayList<RobotInfo> nearbyAllyInfo = new ArrayList<RobotInfo>();
+                ArrayList<RobotInfo> nearbyEnemyInfo = new ArrayList<RobotInfo>();
+                RobotInfo info;
+                for (Robot r: nearbyRobots) {
+                    info = rc.senseRobotInfo(r);
+                        if (info.type == RobotType.SOLDIER)
+                            nearbyAllyInfo.add(info);
+                }
+                nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 36, notMyTeam);
+                for (Robot r: nearbyRobots) {
+                    info = rc.senseRobotInfo(r);
+                        if (info.type == RobotType.SOLDIER)
+                    if (info.type == RobotType.SOLDIER)
+                        nearbyEnemyInfo.add(info);
+                }
+                //Bytecode cost -> 304+(122+87n)=426+87n up to here (as of 64fca1348b7d7f60bb3d131a09b03389c85bdb6b)
+                //Worst -> 1k (n~=6)
+                System.out.println(nearbyAllyInfo.size() + ", " + nearbyEnemyInfo.size() + " : "+Clock.getBytecodeNum());*/
+                ///*
+                Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 36);
+                ArrayList<RobotInfo> allyInfo = new ArrayList<RobotInfo>();
+                ArrayList<RobotInfo> enemyInfo = new ArrayList<RobotInfo>();
                 //Populate the knowledge of all nearby robots.
                 RobotInfo info;
                 for (Robot r: nearbyRobots) {
                     info = rc.senseRobotInfo(r);
                     if (info.team == myTeam) {
-                        allyRobotInfo.add(info);
-                    } else if (info.team == notMyTeam) {
-                        enemyRobotInfo.add(info);
+                        allyInfo.add(info);
+                    } else {
+                        enemyInfo.add(info);
                     }
                 }
-                //Set current location
-                myLocation = rc.getLocation();
-                health = rc.getHealth();
+                //Bytecode cost -> 48+(360+89n)=408
+                //BENCHMARKING
+                bytecodes = Clock.getBytecodeNum();
+                //System.out.println(allyInfo.size() + ", " + enemyInfo.size() + " : "+Clock.getBytecodeNum());*/
+                ////////
+                currLoc = rc.getLocation();
+                currHP = rc.getHealth();
                 advantage = calculateAdvantage(myLocation, allyRobotInfo, enemyRobotInfo);
-                int nearbyAllyCount = 0;
-                for (RobotInfo i: allyRobotInfo) {
-                    //GA TODO: parameterize the distance.
-                    if (i.location.distanceSquaredTo(myLocation) < 16) {
-                        nearbyAllyCount++;
-                        if (nearbyAllyCount >= 3)
-                            break;
-                    }
-                }
-                //Mode selection
-                if (health <= 30 &&
-                    advantage < 0 &&
-                    enemyRobotInfo.size() > 1) {
-                    mode = 2;
-                    range = 0;
-                    dst = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                } else if (nearbyAllyCount < 3) {
-                    //Never solo. Wait at the base to regroup if stranded.
-                    mode = 1;
-                    range = 0;
-                    dst = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                } else if (advantage == 0 && enemyRobotInfo.size() > 0) {
-                    //Cold war tactics:
-                    //Don't move.
-                    mode = 5;
-                    range = 0;//3.163;
-                    dst = myLocation;
-                } else if (advantage < 0) {
-                    //In a disadvantage, run back to base.
-                    //mode = 0;
-                    //range = 3;
-                    //In a disadvantage, flee back to base.
-                    mode = 2;
-                    range = 0;
-                    dst = allyHQLocation.subtract(enemyDir).subtract(enemyDir);
-                } else if (advantage > 20000 &&
-                           enemyRobotInfo.size() > 1) {
-                    mode = 3;
-                    range = 0;
-                    dst = enemyHQLocation;
-                    //dst = new MapLocation(mapWidth/2, mapHeight/2);
-                } else {
-                    //By default, charge to their base.
-                    mode = 0;
-                    range = 0;//7;
-                    dst = enemyHQLocation;
-                }
-                /*
-                dst = enemyHQLocation;
-                if (dst.distanceSquaredTo(myLocation) > 64) {
-                    //Switching destinations
-                    if (dst != null &&
-                        lastDst != dst) {
-                        findPath(myLocation, dst);
-                        lastDst = dst;
-                        index = 12;
-                        currWaypoint = wayPoints.get(index);
-                        target = currWaypoint;
-                        System.out.println("Initial waypoint:"+currWaypoint.x+", "+currWaypoint.y);
-                    }
-                    //If at the next waypoint
-                    if (currWaypoint.distanceSquaredTo(myLocation) < 4) {
-                        currWaypoint = wayPoints.get(index);
-                        index += 8;
-                        target = currWaypoint;
-                        System.out.println("new waypoint:"+currWaypoint.x+", "+currWaypoint.y);
-                    }
-                } else {
-                    target = dst;
-                }
-                range = 0;
-                mode = 0;
-                */
-                //
-                range = 0; mode = 0;
-                dst = enemyHQLocation;
-                if (lastDst == null) {
-                    findPath(myLocation, dst);
-                    lastDst = dst;
-                    index = 12;
-                    target = wayPoints.get(index);
-                } 
-                if (target.distanceSquaredTo(rc.getLocation()) <= 4) {
-                    index += 8;
-                    target = wayPoints.get(index);
-                }
-                //
-                rc.setIndicatorString(1, "Mode: "+mode+", Advantage: "+advantage);
-                if (mode == 0 || mode == 1 || mode == 5) {
-                    //If in an aggressive mode, attack if possible.
-                    if (enemyRobotInfo.size() > 0) {
-                        //Attacking, selecting the enemy with the lowest health.
-                        RobotInfo attackTarget = bestTargetInRange(myLocation,
-                                enemyRobotInfo);
-                        if (attackTarget != null) {
-                            rc.attackSquare(attackTarget.location);
-                            return;
-                        }
-                    }
-                }
-                if (mode != 5) {
-                    //Moving, using vector field.
-                    tryMove(myLocation, allyRobotInfo, enemyRobotInfo, mode, range);
-                }
+                System.out.println(Clock.getBytecodeNum()-bytecodes);
+                return;
             }
         } catch(Exception e) {
             e.printStackTrace();

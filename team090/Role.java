@@ -367,14 +367,6 @@ abstract class Role{
         Direction desiredDirection;
         boolean nearWall = false;
         /*
-        for (MapLocation pheromone: myTrail) {
-            if (src.equals(pheromone)) {
-                failCount++;
-                break;
-            }
-        }
-        */
-        /*
         //Use pheremones if touching a wall.
         if (rc.senseTerrainTile(src.add(Direction.NORTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.WEST)).ordinal() > 1 ||
@@ -382,40 +374,35 @@ abstract class Role{
             rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1)
             nearWall = true;
         */
-        /*
-        if (failCount > 7 &&
-            src.distanceSquaredTo(target) > 36) {
-            if (pathSetTo != null) {
-                findPath(src, target);
-                pathSetTo = target;
-                pathProgress = 0;
-            }
-            target = wayPoints.get(pathProgress);
-        }
-        */
         switch (mode) {
-            case 0:
-                force = VFcharge(src, allyRobotInfo, enemyRobotInfo, param);
+                //Retreat
+            case -1:
+                force = VFflee(src, enemyRobotInfo);
                 break;
+                //Stay put
+            case 0:
+                break;
+                //Inch forward
             case 1:
                 force = VFregroup(src, allyRobotInfo);
                 break;
+                //Charge to base
             case 2:
-                force = VFflee(src, enemyRobotInfo);
+                force = VFcharge(src, allyRobotInfo, enemyRobotInfo, param);
                 break;
+                //A-move
             case 3:
                 force = VFaggro(src, allyRobotInfo, enemyRobotInfo, param);
                 break;
+                //S
             default:
                 System.out.printf("Invalid mode selected: %d\n", mode);
                 force = VFflee(src, enemyRobotInfo);
                 break;
         }
-        /*
         if (nearWall) {
             force.add(getPheremoneForce(src));
         }
-        */
         desiredDirection = force.toDirectionEnum();
         if (rc.canMove(desiredDirection)) {
             rc.move(desiredDirection);

@@ -38,7 +38,8 @@ abstract class Role{
     //NOTE: Refers to direction from AllyHQ to EnemyHQ.
     Direction enemyDir;
 
-    MapLocation target = null;
+    MapLocation target;
+
     Queue<MapLocation> myTrail = new LinkedList<MapLocation>();
 
     int keepaliveChannel = -1;
@@ -184,9 +185,8 @@ abstract class Role{
         return nearbyAllyAggregateHealth+currHP - nearbyEnemyAggregateHealth;
     }
     //Vector Field Go To//
-    //Go to and surround the target, keeping a given distance.
-    //NOTE: requires target to be set.
-    Vector VFcharge(MapLocation src,
+    //Go to and surround the destination, keeping a given distance.
+    Vector VFcharge(MapLocation src, MapLocation dst,
                     ArrayList<RobotInfo> allyRobotInfo,
                     ArrayList<RobotInfo> enemyRobotInfo,
                     double range) throws Exception {
@@ -196,11 +196,9 @@ abstract class Role{
         Vector enemyForce = new Vector();
         Vector targetForce = new Vector();
         if (range > 0) {
-            targetForce = Vector.getForceVector(src,
-                    target).step(range, 16, -6);
+            targetForce = Vector.getForceVector(src, dst).step(range, 16, -6);
         } else {
-            targetForce = Vector.getForceVector(src,
-                    target).logistic(0, 112, 0);
+            targetForce = Vector.getForceVector(src, dst).logistic(0, 112, 0);
         }
         count = 0;
         for (RobotInfo info: allyRobotInfo) {
@@ -238,14 +236,13 @@ abstract class Role{
         return netForce;
     }
     //Vector Field Go To and Regroup//
-    //Go to nearby allies, also gravitate towards the target.
-    //NOTE: requires target to be set.
-    Vector VFregroup(MapLocation src,
+    //Go to nearby allies, also gravitate towards the destination.
+    Vector VFregroup(MapLocation src, MapLocation dst,
                      ArrayList<RobotInfo> allyRobotInfo) throws Exception {
-        //Stay together with allied soldiers and go to the target location.
+        //Stay together with allied soldiers and go to the destination.
         Vector netForce = new Vector();
         Vector allyForce = new Vector();
-        Vector targetForce = Vector.getForceVector(src, target).log(0, 2);
+        Vector targetForce = Vector.getForceVector(src, dst).log(0, 2);
 
         //count = 0;
         for (RobotInfo info: allyRobotInfo) {
@@ -267,15 +264,14 @@ abstract class Role{
         return netForce;
     }
     //Vector Field Flee//
-    //Runs to target if no enemies are in sight.
-    //NOTE: requires target to be set.
-    Vector VFflee(MapLocation src,
+    //Runs to destination if no enemies are in sight.
+    Vector VFflee(MapLocation src, MapLocation dst,
                   ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
         Vector netForce = new Vector();
         Vector enemyForce = new Vector();
         //GA TODO: parameterize.
         Vector targetForce = Vector.getForceVector(src,
-                target).logistic(3, 0.7, 1);
+                dst).logistic(3, 0.7, 1);
 
         //count = 0;
         for (RobotInfo info: enemyRobotInfo) {
@@ -291,6 +287,8 @@ abstract class Role{
         netForce.add(targetForce);
         return netForce; 
     }
+    //Vector Field A-move//
+    //Runs to target enemy.
     Vector VFaggro(MapLocation src,
                    ArrayList<RobotInfo> allyRobotInfo,
                    ArrayList<RobotInfo> enemyRobotInfo,
@@ -301,9 +299,8 @@ abstract class Role{
         Vector netForce = new Vector();
         Vector allyForce = new Vector();
         Vector enemyForce = new Vector();
-        //Be warned.
         Vector targetForce = Vector.getForceVector(src,
-                target).logistic(range, 1, 0);
+                enemyHQLocation).logistic(range, 1, 0);
         count = 0;
         for (RobotInfo info: allyRobotInfo) {
             switch (info.type) {
@@ -356,39 +353,36 @@ abstract class Role{
         }
         return pheromoneForce;
     }
-    void tryMove(MapLocation src,
+    void tryMove(MapLocation src, MapLocation dst,
                  ArrayList<RobotInfo> allyRobotInfo,
                  ArrayList<RobotInfo> enemyRobotInfo,
                  int mode,
                  //Param is range for VFcharge, ignored if mode != 0
                  double param) throws Exception {
-        
         Vector force = new Vector();
         Direction desiredDirection;
         boolean nearWall = false;
-        /*
         //Use pheremones if touching a wall.
         if (rc.senseTerrainTile(src.add(Direction.NORTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.WEST)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.SOUTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1)
             nearWall = true;
-        */
         switch (mode) {
                 //Retreat
             case -1:
-                force = VFflee(src, enemyRobotInfo);
+                force = VFflee(src, dst, enemyRobotInfo);
                 break;
                 //Stay put
             case 0:
                 break;
                 //Inch forward
             case 1:
-                force = VFregroup(src, allyRobotInfo);
+                force = VFregroup(src, dst, allyRobotInfo);
                 break;
                 //Charge to base
             case 2:
-                force = VFcharge(src, allyRobotInfo, enemyRobotInfo, param);
+                force = VFcharge(src, dst, allyRobotInfo, enemyRobotInfo, param);
                 break;
                 //A-move
             case 3:
@@ -397,7 +391,7 @@ abstract class Role{
                 //S
             default:
                 System.out.printf("Invalid mode selected: %d\n", mode);
-                force = VFflee(src, enemyRobotInfo);
+                force = VFflee(src, dst, enemyRobotInfo);
                 break;
         }
         if (nearWall) {

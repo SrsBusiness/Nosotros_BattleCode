@@ -132,6 +132,7 @@ class Infantry extends Role{
                         }
                     }
                 }
+                /*
                 switch (mode) {
                     //Retreat
                     case -1:
@@ -153,6 +154,7 @@ class Infantry extends Role{
                         ;
                         break;
                 }
+                */
                 //BENCHMARKING
                 System.out.println(Clock.getBytecodeNum());
                 return;

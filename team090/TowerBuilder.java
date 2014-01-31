@@ -25,9 +25,7 @@ class TowerBuilder extends Role{
         }
         target = new MapLocation(x, y);
         blueprints = structure;
-        System.out.printf("Bonjour! Curr round: %d. Curr pos: %d, %d. My target: %d, %d\n",
-                Clock.getRoundNum(), rc.getLocation().x, rc.getLocation().y, target.x, target.y);
-        rc.setIndicatorString(6, "I am builder.");
+        rc.setIndicatorString(6, "I am builder, going to: "+target.x+", "+target.y);
     }
     void execute() {
         try {
@@ -50,7 +48,7 @@ class TowerBuilder extends Role{
             //  System.out.printf("I'm on it. Current : %d, %d, Target: %d, %d\n",
             //                    myLocation.x, myLocation.y,
             //                    target.x, target.y);
-                tryMove(myLocation, null, enemyRobotInfo, 2, 0);
+                tryMove(myLocation, null, null, enemyRobotInfo, -1, 0);
                 return;
             }
         } catch(Exception e) {

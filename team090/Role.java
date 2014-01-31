@@ -294,7 +294,7 @@ abstract class Role{
                 //count++;
                 //GA TODO: params pls.
                 pheromoneForce.add(Vector.getForceVector(src,
-                            pheromone).inv(-5, 0.5, -1));
+                            pheromone).log(-1, -20));
             }
         }
         return pheromoneForce;
@@ -305,13 +305,15 @@ abstract class Role{
                  int mode) throws Exception {
         Vector force = new Vector();
         Direction desiredDirection;
-        boolean nearWall = false;
+        boolean needHelp = false;
         //Use pheremones if touching a wall.
         if (rc.senseTerrainTile(src.add(Direction.NORTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.WEST)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.SOUTH)).ordinal() > 1 ||
-            rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1)
-            nearWall = true;
+            rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1) {
+            //TODO: add pheremone tracker.
+            needHelp = true;
+        }
         switch (mode) {
                 //Retreat
             case -1:
@@ -338,7 +340,7 @@ abstract class Role{
                 force = VFflee(src, dst, enemyRobotInfo);
                 break;
         }
-        if (nearWall) {
+        if (needHelp) {
             force.add(getPheremoneForce(src));
         }
         desiredDirection = force.toDirectionEnum();
@@ -355,7 +357,7 @@ abstract class Role{
         //Lay down pheromone trail.
         myTrail.offer(src);
         //GA TODO: parameterize the trail size.
-        if (myTrail.size() >= 5) {
+        if (myTrail.size() > 7) {
             myTrail.remove();
         }
     }

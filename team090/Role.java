@@ -151,6 +151,8 @@ abstract class Role{
         }
         return Direction.NONE;
     }
+    /*
+    DEPRECATED
     //This function calculates if the local engagement is favorable for the team.
     //Does not decide on positioning, only local team aggresion.
     //NOTE: Assumes that all robotInfo in the arraylist is in range.
@@ -179,53 +181,36 @@ abstract class Role{
                 nearbyEnemyAggregateHealth += info.health;
             }
         }
-        rc.setIndicatorString(0, "Ally count: "+(nearbyAllyCount+1)+", Enemy count: "+nearbyEnemyCount);
         //Eval function
         //GA TODO: ax+b - cy+d
         return nearbyAllyAggregateHealth+currHP - nearbyEnemyAggregateHealth;
     }
+    */
     //Vector Field Go To//
     //Go to and surround the destination, keeping a given distance.
     Vector VFcharge(MapLocation src, MapLocation dst,
                     ArrayList<RobotInfo> allyRobotInfo,
-                    ArrayList<RobotInfo> enemyRobotInfo,
-                    double range) throws Exception {
+                    ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
         int count;
         Vector netForce = new Vector();
         Vector allyForce = new Vector();
         Vector enemyForce = new Vector();
         Vector targetForce = new Vector();
-        if (range > 0) {
-            targetForce = Vector.getForceVector(src, dst).step(range, 16, -6);
-        } else {
-            targetForce = Vector.getForceVector(src, dst).logistic(0, 112, 0);
-        }
-        count = 0;
+        targetForce = Vector.getForceVector(src, dst).logistic(0, 8, 0);
+        //count = 0;
         for (RobotInfo info: allyRobotInfo) {
-            if (info.location.distanceSquaredTo(src) < 36) {
-                if (info.type == RobotType.SOLDIER) {
-                    count++;
-                    //GA TODO: paramaterize weights.
-                    allyForce.add(Vector.getForceVector(src,
-                                info.location).log(2.4, 0.8));
-                }
-            }
+            //count++;
+            //GA TODO: paramaterize weights.
+            allyForce.add(Vector.getForceVector(src,
+                        info.location).log(2.4, 0.8));
         }
         count = 0;
         for (RobotInfo info: enemyRobotInfo) {
-            if (info.location.distanceSquaredTo(src) < 36) {
-                switch (info.type) {
-                    case SOLDIER:
-                        count++;
-                        //GA TODO: paramaterize weights.
-                        enemyForce.add(Vector.getForceVector(src,
-                                    info.location).log(0, -0.3));
-                        break;
-                    case PASTR:
-                        enemyForce.add(Vector.getForceVector(src,
-                                    info.location).log(-1, 16));
-                }
-            }
+            count++;
+            //GA TODO: paramaterize weights.
+            enemyForce.add(Vector.getForceVector(src,
+                        info.location).log(0, -0.3));
+            break;
         }
         if (count > 0) {
             enemyForce = enemyForce.scale(2.0/count);
@@ -246,18 +231,9 @@ abstract class Role{
 
         //count = 0;
         for (RobotInfo info: allyRobotInfo) {
-            switch (info.type) {
-                case SOLDIER: 
-                    //           count++;
-                    allyForce.add(Vector.getForceVector(src,
-                                info.location).log(1, 2));
-                    break;
-                case PASTR:
-                    //           count++;
-                    allyForce.add(Vector.getForceVector(src,
-                                info.location).log(5, 2));
-                    break;
-            }
+            //           count++;
+            allyForce.add(Vector.getForceVector(src,
+                        info.location).log(1, 2));
         }
         netForce.add(allyForce);
         netForce.add(targetForce);
@@ -271,17 +247,13 @@ abstract class Role{
         Vector enemyForce = new Vector();
         //GA TODO: parameterize.
         Vector targetForce = Vector.getForceVector(src,
-                dst).logistic(3, 0.7, 1);
+                allyHQLocation).logistic(3, 0.7, 1);
 
         //count = 0;
         for (RobotInfo info: enemyRobotInfo) {
-            if (info.location.distanceSquaredTo(src) < 36) {
-                if (info.type == RobotType.SOLDIER) {
-                    //      count++;
-                    enemyForce.add(Vector.getForceVector(src,
-                                info.location).log(-1, -6));
-                }
-            }
+            //      count++;
+            enemyForce.add(Vector.getForceVector(src,
+                        info.location).log(-1, -6));
         }
         netForce.add(enemyForce);
         netForce.add(targetForce);
@@ -290,52 +262,27 @@ abstract class Role{
     //Vector Field A-move//
     //Runs to target enemy.
     Vector VFaggro(MapLocation src,
-                   ArrayList<RobotInfo> allyRobotInfo,
-                   ArrayList<RobotInfo> enemyRobotInfo,
-                   double range) {
+                   ArrayList<RobotInfo> enemyRobotInfo) {
         int count;
-        double maxHealth = (double)Integer.MAX_VALUE;
-        RobotInfo robotTarget = enemyRobotInfo.size() > 0? enemyRobotInfo.get(0): null;
-        Vector netForce = new Vector();
-        Vector allyForce = new Vector();
+        double minHealth = (double)Integer.MAX_VALUE;
+        RobotInfo robotTarget = (enemyRobotInfo.size() > 0)?
+                                enemyRobotInfo.get(0):null;
+        //Vector netForce = new Vector();
         Vector enemyForce = new Vector();
-        Vector targetForce = Vector.getForceVector(src,
-                enemyHQLocation).logistic(range, 1, 0);
         count = 0;
-        for (RobotInfo info: allyRobotInfo) {
-            switch (info.type) {
-                case SOLDIER: 
-                    count++;
-                    allyForce.add(Vector.getForceVector(src,
-                                info.location).log(0, 1));
-                    break;
-            }
-        }
-        if (count > 0) {
-            allyForce = allyForce.scale(1.0/count);
-        }
         for (RobotInfo info: enemyRobotInfo) {
-            switch (info.type) {
-                case SOLDIER: 
-                    if (info.health < maxHealth) {
-                        maxHealth = info.health;
-                        robotTarget = info;
-                    }
-                    break;
-                case PASTR:
-                    enemyForce.add(Vector.getForceVector(src,
-                                info.location).log(0, 2));
-                    break;
+            if (info.health < minHealth) {
+                minHealth = info.health;
+                robotTarget = info;
             }
         }
         if (robotTarget != null) {
             enemyForce.add(Vector.getForceVector(src,
                         robotTarget.location).log(0, 4));
         }
-        netForce.add(allyForce);
-        netForce.add(enemyForce);
-        netForce.add(targetForce);
-        return netForce;
+        //netForce.add(enemyForce);
+        //return netForce;
+        return enemyForce;
     }
     Vector getPheremoneForce(MapLocation src) {
         Vector pheromoneForce = new Vector();
@@ -356,9 +303,7 @@ abstract class Role{
     void tryMove(MapLocation src, MapLocation dst,
                  ArrayList<RobotInfo> allyRobotInfo,
                  ArrayList<RobotInfo> enemyRobotInfo,
-                 int mode,
-                 //Param is range for VFcharge, ignored if mode != 0
-                 double param) throws Exception {
+                 int mode) throws Exception {
         Vector force = new Vector();
         Direction desiredDirection;
         boolean nearWall = false;
@@ -382,11 +327,11 @@ abstract class Role{
                 break;
                 //Charge to base
             case 2:
-                force = VFcharge(src, dst, allyRobotInfo, enemyRobotInfo, param);
+                force = VFcharge(src, dst, allyRobotInfo, enemyRobotInfo);
                 break;
                 //A-move
             case 3:
-                force = VFaggro(src, allyRobotInfo, enemyRobotInfo, param);
+                force = VFaggro(src, enemyRobotInfo);
                 break;
                 //S
             default:

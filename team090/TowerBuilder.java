@@ -48,7 +48,8 @@ class TowerBuilder extends Role{
             //  System.out.printf("I'm on it. Current : %d, %d, Target: %d, %d\n",
             //                    myLocation.x, myLocation.y,
             //                    target.x, target.y);
-                tryMove(myLocation, null, null, enemyRobotInfo, -1, 0);
+                //TODO: write a VFgoto or something with a* or something
+                tryMove(myLocation, target, null, enemyRobotInfo, 2);
                 return;
             }
         } catch(Exception e) {

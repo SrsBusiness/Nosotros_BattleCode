@@ -36,28 +36,24 @@ class Infantry extends Role{
             if(rc.isActive()) {
                 Robot[] nearbyRobots = rc.senseNearbyGameObjects(Robot.class, 36);
                 ArrayList<RobotInfo> allySoldierInfo = new ArrayList<RobotInfo>();
+                ArrayList<RobotInfo> enemyInfo = new ArrayList<RobotInfo>();
                 ArrayList<RobotInfo> enemySoldierInfo = new ArrayList<RobotInfo>();
-                ArrayList<RobotInfo> enemyPastrInfo = new ArrayList<RobotInfo>();
                 //Populate the knowledge of all nearby robots.
                 RobotInfo info;
                 for (Robot r: nearbyRobots) {
                     info = rc.senseRobotInfo(r);
-                    if (info.team == myTeam &&
-                        info.type == RobotType.SOLDIER) {
-                        allySoldierInfo.add(info);
+                    if (info.team == myTeam) {
+                        if (info.type == RobotType.SOLDIER) {
+                            allySoldierInfo.add(info);
+                        }
                     } else {
-                        switch (info.type) {
-                            case SOLDIER:
-                                enemySoldierInfo.add(info);
-                                break;
-                            case PASTR:
-                                enemyPastrInfo.add(info);
-                                break;
+                        enemyInfo.add(info);
+                        if (info.type == RobotType.SOLDIER) {
+                            enemySoldierInfo.add(info);
                         }
                     }
                 }
                 //Bytecode cost -> 48+(360+89n)=408
-                //System.out.println(allyInfo.size() + ", " + enemyInfo.size() + " : "+Clock.getBytecodeNum());*/
                 currLoc = rc.getLocation();
                 currHP = rc.getHealth();
                 nearbyAllyCount = 0;
@@ -65,6 +61,7 @@ class Infantry extends Role{
                 nearbyEnemyCount = 0;
                 nearbyEnemyHealth = 0;
 
+                //Calculate advantage
                 for (RobotInfo ri: allySoldierInfo) {
                     //GA TODO: paramize. (5)
                     if (currLoc.distanceSquaredTo(ri.location) < 16) {
@@ -75,20 +72,26 @@ class Infantry extends Role{
                 for (RobotInfo ri: enemySoldierInfo) {
                     tempRange = currLoc.distanceSquaredTo(ri.location);
                     if (tempRange < tempOptima) {
+                        //Find the distance to the closest enemy.
                         tempOptima = tempRange;
                     }
-                    if (ri.type == RobotType.SOLDIER) {
-                        nearbyEnemyCount++;
-                        nearbyEnemyHealth += ri.health;
-                    }
+                    nearbyEnemyCount++;
+                    nearbyEnemyHealth += ri.health;
                 }
-                //
-                rc.setIndicatorString(0, "Ally count: "+(nearbyAllyCount+1)+
-                                         ", Enemy count: "+nearbyEnemyCount);
                 advantage = nearbyAllyHealth+currHP - nearbyEnemyHealth;
                 //Bytecode cost + (183+93n)=456+186n
                 //Mode Selection
-                if (currHP <= nearbyEnemyCount*10) {
+                if (currLoc.distanceSquaredTo(enemyHQLocation) <= 24) {
+                    //Retreat if too close to enemy HQ.
+                    System.out.println("Too close!");
+                    mode = -1;
+                    willAttack = false;
+                } else if (currLoc.distanceSquaredTo(enemyHQLocation) < 35 &&
+                      currHP > 70) {
+                    //Camping
+                    mode = 0;
+                    willAttack = true;
+                } else if (currHP <= nearbyEnemyCount*10 || currHP <= 10) {
                     //Retreat if could be one-shotted.
                     mode = -1;
                     willAttack = false;
@@ -118,45 +121,54 @@ class Infantry extends Role{
                     }
                 } else {
                     //This never happens, but included for safety.
+                    System.out.println("Error: case not accounted for.");
                     mode = 0;
-                    willAttack = false;
+                    willAttack = true;
                 }
+                rc.setIndicatorString(1, "Nearby ally count: "+nearbyAllyCount+"; Nearby enemy count: "+nearbyEnemyCount+"; Advantage: "+advantage+"; Mode: "+mode);
                 if (willAttack) {
                     if (nearbyEnemyCount > 0) {
                         //Attacking, selecting the enemy with the lowest health.
                         RobotInfo attackTarget = bestTargetInRange(currLoc,
-                                enemySoldierInfo);
+                                enemyInfo);
                         if (attackTarget != null) {
                             rc.attackSquare(attackTarget.location);
                             return;
                         }
                     }
                 }
-                /*
                 switch (mode) {
-                    //Retreat
+                       //Retreat
                     case -1:
-                        ;
+                        tryMove(currLoc, null,
+                                allySoldierInfo, enemySoldierInfo, mode);
                         break;
-                    //Stay put
+                        //Stay put
                     case 0:
                         break;
-                    //Inch forward
+                        //Inch forward
                     case 1:
-                        ;
+                        tryMove(currLoc, enemyHQLocation,
+                                allySoldierInfo, enemySoldierInfo, mode);
                         break;
-                    //Charge to base
+                        //Charge to base
                     case 2:
-                        ;
+                        tryMove(currLoc, enemyHQLocation,
+                                allySoldierInfo, enemySoldierInfo, mode);
                         break;
-                    //A-move
+                        //A-move
                     case 3:
-                        ;
+                        tryMove(currLoc, enemyHQLocation,
+                                allySoldierInfo, enemySoldierInfo, mode);
+                        break;
+                        //S
+                    default:
+                        tryMove(currLoc, allyHQLocation,
+                                allySoldierInfo, enemySoldierInfo, -1);
                         break;
                 }
-                */
                 //BENCHMARKING
-                System.out.println(Clock.getBytecodeNum());
+                rc.setIndicatorString(0, ""+Clock.getBytecodeNum());
                 return;
             }
         } catch(Exception e) {

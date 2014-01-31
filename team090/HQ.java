@@ -124,6 +124,7 @@ class HQ extends Role{
             }
             //GA TODO: set the PASTR construction time.
             //paramaterize all these starting triggers.
+            /*
             if ((robotIDs.size() >= 6 && noisetowerMaker == 0)
                       || (noisetowerMaker != 0 && getUnitTypeStatus(7) == false)) {
                 noisetowerMaker = robotIDs.get(robotIDs.size()-1);
@@ -140,7 +141,9 @@ class HQ extends Role{
                 target = selectFarmLocation();
                 rc.broadcast(3, target.x);
                 rc.broadcast(4, target.y);
-            } else if (robotIDs.size() == 8 && pirates[0] == 0) {
+            }
+            */
+            // else if (robotIDs.size() == 8 && pirates[0] == 0) {
             //  pirates[0] = robotIDs.get(robotIDs.size() - 1);
             //  rc.broadcast(1, pirates[0]);
             //  rc.broadcast(2, 3);
@@ -148,7 +151,7 @@ class HQ extends Role{
             //  pirates[1] = robotIDs.get(robotIDs.size() - 1);
             //  rc.broadcast(1, pirates[1]);
             //  rc.broadcast(2, 4);
-            }
+            //}
             enemyPastrs = rc.sensePastrLocations(notMyTeam);
             if (enemyPastrs.length >= 2) {
                 //If there are 2 or more PASTRS, start a-moving.
@@ -187,7 +190,7 @@ class HQ extends Role{
             }
             if (cowRates == null) {
                 cowRates = rc.senseCowGrowth();
-                getOptimalFarmLocation();
+                //getOptimalFarmLocation();
             }
         } catch (Exception e) {
             System.err.println(e.toString() + " HQ Exception\n");

@@ -70,7 +70,7 @@ public class Vector {
     public Vector inv(double c0, double c1,
                       double c2) {
         double r = this.getMagnitude();
-        return this.getUnitVector().scale(c0/(r-c1)+c2);
+        return this.getUnitVector().scale(c0/((r-c1)*(r-c1))+c2);
     }
     public Vector poly(double c0, double c1,
                        double c2, double c3,

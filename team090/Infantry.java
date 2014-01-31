@@ -81,15 +81,16 @@ class Infantry extends Role{
                 advantage = nearbyAllyHealth+currHP - nearbyEnemyHealth;
                 //Bytecode cost + (183+93n)=456+186n
                 //Mode Selection
-                if (currLoc.distanceSquaredTo(enemyHQLocation) <= 24) {
+                if (currLoc.distanceSquaredTo(enemyHQLocation) <= 25) {
                     //Retreat if too close to enemy HQ.
-                    System.out.println("Too close!");
+                    //System.out.println("Too close!");
                     mode = -1;
                     willAttack = false;
-                } else if (currLoc.distanceSquaredTo(enemyHQLocation) < 35 &&
+                } else if (currLoc.distanceSquaredTo(enemyHQLocation) <= 36 &&
                       currHP > 70) {
                     //Camping
-                    mode = 0;
+                    //Cutting corners here, who needs positional heuristics...
+                    mode = (rand.nextInt(68)<64?0:-1);
                     willAttack = true;
                 } else if (currHP <= nearbyEnemyCount*10 || currHP <= 10) {
                     //Retreat if could be one-shotted.
@@ -109,7 +110,10 @@ class Infantry extends Role{
                 } else if (advantage < 0) {
                     //Retreat.
                     mode = -1;
-                } else if (advantage > 0) {
+                } else if (advantage < 20) {
+                    mode = 0;
+                    willAttack = true;
+                } else if (advantage >= 20) {
                     if (nearbyEnemyCount > 0) {
                         //A-move
                         mode = 3;

@@ -52,6 +52,19 @@ abstract class Role{
 
     abstract void execute(); 
 
+    //Constructor
+    Role(RobotController rc) {
+        this.rc = rc;
+        myTeam = rc.getTeam();
+        notMyTeam = myTeam.opponent();
+        mapWidth = rc.getMapWidth();
+        mapHeight = rc.getMapHeight();
+        allyHQLocation = rc.senseHQLocation();
+        enemyHQLocation = rc.senseEnemyHQLocation();
+        //NOTE: Careful about this one
+        enemyDir = allyHQLocation.directionTo(enemyHQLocation);
+        rand = new Random();
+    }
     // A* algorithm, sets up waypoints
     // If path found, returns true, else returns false.
     boolean findPath(MapLocation src, MapLocation dest){ 
@@ -120,18 +133,6 @@ abstract class Role{
     }
     private double heuristic(MapLocation current, MapLocation dest, HashMap<MapLocation, Double> gScore){
         return Math.sqrt(current.distanceSquaredTo(dest)) + gScore.get(current); 
-    }
-    //Constructor
-    Role(RobotController rc) {
-        this.rc = rc;
-        myTeam = rc.getTeam();
-        notMyTeam = myTeam.opponent();
-        mapWidth = rc.getMapWidth();
-        mapHeight = rc.getMapHeight();
-        allyHQLocation = rc.senseHQLocation();
-        enemyHQLocation = rc.senseEnemyHQLocation();
-        //NOTE: Careful about this one
-        enemyDir = allyHQLocation.directionTo(enemyHQLocation);
     }
     Direction nextAdjacentEmptyLocation(MapLocation src, Direction initial) {
         Direction[] alternatives = new Direction[7];
@@ -243,21 +244,19 @@ abstract class Role{
     //Runs to destination if no enemies are in sight.
     Vector VFflee(MapLocation src, MapLocation dst,
                   ArrayList<RobotInfo> enemyRobotInfo) throws Exception {
-        Vector netForce = new Vector();
         Vector enemyForce = new Vector();
-        //GA TODO: parameterize.
-        Vector targetForce = Vector.getForceVector(src,
-                allyHQLocation).logistic(3, 0.7, 1);
-
         //count = 0;
         for (RobotInfo info: enemyRobotInfo) {
             //      count++;
             enemyForce.add(Vector.getForceVector(src,
-                        info.location).log(-1, -6));
+                        info.location).inv(-6, 0, 0));
         }
-        netForce.add(enemyForce);
-        netForce.add(targetForce);
-        return netForce; 
+        if (enemyForce.getX() != 0 && enemyForce.getY() != 0) {
+            return enemyForce;
+        } else {
+            return Vector.getForceVector(src,
+                    allyHQLocation).logistic(3, 0.1, 1);
+        }
     }
     //Vector Field A-move//
     //Runs to target enemy.

@@ -164,7 +164,6 @@ class HQ extends Role{
                 //Check if a robot is spawnable and spawn one if it is
                 if (rc.isActive() &&
                     rc.senseRobotCount() < GameConstants.MAX_ROBOTS) {
-                    System.out.println("Spawning with bytecodes: "+Clock.getBytecodeNum());
                     if (rc.canMove(enemyDir)) {
                         rc.spawn(enemyDir);
                     } else {

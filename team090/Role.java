@@ -312,7 +312,12 @@ abstract class Role{
             rc.senseTerrainTile(src.add(Direction.SOUTH)).ordinal() > 1 ||
             rc.senseTerrainTile(src.add(Direction.EAST)).ordinal() > 1) {
             //TODO: add pheremone tracker.
-            needHelp = true;
+            for (MapLocation p: myTrail) {
+                if (src.equals(p)) {
+                    needHelp = true;
+                    break;
+                }
+            }
         }
         switch (mode) {
                 //Retreat

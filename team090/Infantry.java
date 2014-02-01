@@ -137,6 +137,7 @@ class Infantry extends Role{
                                 enemyInfo);
                         if (attackTarget != null) {
                             rc.attackSquare(attackTarget.location);
+                            myTrail.remove();
                             return;
                         }
                     }
@@ -170,6 +171,16 @@ class Infantry extends Role{
                         tryMove(currLoc, allyHQLocation,
                                 allySoldierInfo, enemySoldierInfo, -1);
                         break;
+                }
+                if (mode != 0) {
+                    //Lay down pheromone trail.
+                    myTrail.offer(currLoc);
+                    //GA TODO: parameterize the trail size.
+                    if (myTrail.size() > 7) {
+                        myTrail.remove();
+                    }
+                } else if (mapsize == 0) {
+                    myTrail.remove();
                 }
                 //BENCHMARKING
                 rc.setIndicatorString(0, ""+Clock.getBytecodeNum());

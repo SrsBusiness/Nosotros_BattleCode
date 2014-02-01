@@ -46,6 +46,11 @@ abstract class Role{
 
     LinkedList<MapLocation> wayPoints;
 
+    //0 = small
+    //1 = med
+    //2 = large
+    int mapsize = 0;
+
     //NOTE: Unreliable.
     MapLocation currLoc;
     double currHP;
@@ -64,6 +69,16 @@ abstract class Role{
         //NOTE: Careful about this one
         enemyDir = allyHQLocation.directionTo(enemyHQLocation);
         rand = new Random();
+        //Simple map analysis
+        mapsize = allyHQLocation.distanceSquaredTo(enemyHQLocation);
+        //GA TODO: params
+        if (mapsize < 30) {
+            mapsize = 0;
+        } else if (mapsize < 80) {
+            mapsize = 1;
+        } else {
+            mapsize = 2;
+        }
     }
     // A* algorithm, sets up waypoints
     // If path found, returns true, else returns false.
@@ -358,12 +373,6 @@ abstract class Role{
                 (rc.canMove(desiredDirection))) {
                 rc.move(desiredDirection);
             }
-        }
-        //Lay down pheromone trail.
-        myTrail.offer(src);
-        //GA TODO: parameterize the trail size.
-        if (myTrail.size() > 7) {
-            myTrail.remove();
         }
     }
     //Choose the best robot to attack.
